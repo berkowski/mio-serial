@@ -1,0 +1,24 @@
+[package]
+name = "mio-serial"
+version = "0.1.0"
+authors = ["Zac Berkowitz <zac.berkowitz@gmail.com>"]
+description = "A termios serial implementation for mio"
+license = "MIT"
+homepage = "https://github.com/berkowski/mio-serial"
+repository = "https://github.com/berkowski/mio-serial"
+documentation = "http://docs.rs/mio-serial"
+readme = "README.md"
+keywords = ["termios", "tty", "terminal", "posix", "mio"]
+
+[dependencies]
+mio = "0.6"
+libc = "0.2"
+termios = "0.2"
+
+[[example]]
+name = "serial_printline"
+path = "examples/serial_printline.rs"
+
+[[example]]
+name = "serial_raw_printline"
+path = "examples/serial_raw_printline.rs"
