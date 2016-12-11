@@ -12,7 +12,7 @@ there is **no** windows implementation at this time.
 Add `mio-serial` to you `Cargo.toml`:
 
 ```toml
-[dependecies]
+[dependencies]
 mio-serial = "0.1"
 ```
 
@@ -23,4 +23,4 @@ extern crate mio_serial;
 ```
 
 ## Examples
-A few examples can be found [here](https://github.com/berkowski/mio-serial/examples).
+A few examples can be found [here](https://github.com/berkowski/mio-serial/tree/master/examples).
