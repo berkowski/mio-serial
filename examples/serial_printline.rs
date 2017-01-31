@@ -5,6 +5,7 @@ extern crate mio_serial;
 use mio::{Poll, PollOpt, Events, Token, Ready};
 use std::time::Duration;
 use std::str;
+use std::io::Read;
 
 const SERIAL_TOKEN: Token = Token(0);
 
@@ -13,7 +14,8 @@ pub fn main() {
     let mut events = Events::with_capacity(1024);
 
     // Create the listener
-    let mut rx = mio_serial::SerialPort::open("/dev/ttyUSB0").unwrap();
+    let settings = mio_serial::SerialPortSettings::default();
+    let mut rx = mio_serial::posix::PosixSerial::open("/tmp/ttyUSB0", &settings).unwrap();
 
     poll.register(&rx, SERIAL_TOKEN, Ready::readable(), PollOpt::level()).unwrap();
 
@@ -29,17 +31,18 @@ pub fn main() {
 
         for event in events.iter() {
             let bytes_read = match event.token() {
-                SERIAL_TOKEN => rx.maybe_read(&mut rx_buf),
+                SERIAL_TOKEN => rx.read(&mut rx_buf),
                 _ => unreachable!(),
             };
 
             match bytes_read {
                 Ok(b) => match b {
-                    Some(x) => println!("{:?}", String::from_utf8_lossy(&rx_buf[..x])),
-                    None => println!("Read would have blocked."),
+                    b if b > 0 => println!("{:?}", String::from_utf8_lossy(&rx_buf[..b])),
+                    _ => println!("Read would have blocked."),
                 }, 
                 Err(e) => println!("Error:  {}", e),
             }
         }
     }
 }
+
