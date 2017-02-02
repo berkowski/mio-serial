@@ -15,7 +15,7 @@ pub fn main() {
 
     // Create the listener
     let settings = mio_serial::SerialPortSettings::default();
-    let mut rx = mio_serial::posix::PosixSerial::open("/tmp/ttyUSB0", &settings).unwrap();
+    let mut rx = mio_serial::Serial::from_path("/tmp/ttyUSB0", &settings).unwrap();
 
     poll.register(&rx, SERIAL_TOKEN, Ready::readable(), PollOpt::level()).unwrap();
 

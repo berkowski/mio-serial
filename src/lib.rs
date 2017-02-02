@@ -4,6 +4,7 @@
 //! 
 //! ** At this time this crate ONLY provides a unix implementation **
 //!
+#![cfg(unix)]
 #![deny(missing_docs)]
 
 extern crate serialport;
@@ -11,9 +12,19 @@ extern crate mio;
 
 #[cfg(unix)]
 extern crate libc;
+#[cfg(unix)]
+extern crate termios;
+#[cfg(unix)]
+extern crate ioctl_rs;
+
+pub use serialport::prelude::*;
+pub use serialport::Result as SerialResult;
 
 #[cfg(unix)]
-pub mod posix;
+mod unix;
 
-pub use serialport::{BaudRate, FlowControl, DataBits, StopBits, Parity, SerialPort, SerialPortSettings};
+#[cfg(windows)]
+mod widows;
 
+#[cfg(unix)]
+pub use unix::Serial;

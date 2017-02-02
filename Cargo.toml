@@ -1,6 +1,6 @@
 [package]
 name = "mio-serial"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Zac Berkowitz <zac.berkowitz@gmail.com>"]
 description = "A serial port implementation for mio"
 license = "MIT"
@@ -13,8 +13,12 @@ categories = ["asynchronous", "hardware-support"]
 
 [dependencies]
 mio = "0.6"
+
+[target.'cfg(unix)'.dependencies]
 libc = "0.2"
 serialport = "0.3"
+termios = "0.2"
+ioctl-rs = "0.1"
 
 [[example]]
 name = "serial_printline"

@@ -1,82 +1,65 @@
-//! # mio-serial - A mio-compatable serial port implementation for *nix
-//!
-//! This crate provides a PosixSerial implementation compatable with mio.
-//! 
-//! ** This crate ONLY provides a unix implementation **
-//!
-//! Some basic helper methods are provided for setting a few serial port
-//! parameters such as the baud rate.  For everything else you'll
-//! have to set the flags in the `termios::Termios` struct yourself!  All
-//! the relavent settings can be found consulting your system's `man` page
-//! for termios (e.g. `man termios`)
-//!
-//! This crate is influenced heavily by the [serial](https://github.com/dcuddeback/serial-rs)
-//! crate (by David Cuddeback, same author of the helpful [termios](https://github.com/dcuddeback/termios-rs)
-//! crate!)
 
 use std::os::unix::prelude::*;
-use std::io::{self, Write, Read};
-use std::time::Duration;
+use std::io::{self, Read, Write};
 use std::path::Path;
 use std::convert::AsRef;
+use std::time::Duration;
 
 use libc;
-
-use serialport;
-use serialport::posix::{TTYPort};
-
 use mio::{Evented, PollOpt, Token, Poll, Ready};
 use mio::unix::EventedFd;
 
-/// A mio compatable serial port for *nix
-#[derive(Debug)]
-pub struct PosixSerial {
-    inner: TTYPort,
+use serialport;
+use serialport::posix::TTYPort;
+use serialport::prelude::*;
+
+use termios;
+use ioctl_rs;
+
+/// mio-compatable serial port for *nix
+pub struct Serial {
+    inner: serialport::posix::TTYPort,
 }
 
-impl PosixSerial {
+impl Serial  {
 
-    /// Construct a new PosixSerial
-    ///
-    /// Opens the a serial port at the location provided by `path` with the following
-    /// default settings:
-    ///
-    ///   - 9600,8N1 (9600 Baud, 8-bit data, no parity, 1 stop bit)
-    ///   - Receiver enabled in "Cannonical mode"
-    ///   - Non-blocking
-    ///   - No flow control (software OR hardware)
-    ///   - Ignores hardware control lines
-    ///
-    /// # Errors
-    ///
-    /// PosixSerial construction can fail for a few reasons:
-    ///
-    ///   -  An invalid path is provided
-    ///   -  The path does not represent a serial port device
-    ///   -  We are unable to configure the serial port 
-    ///      ANY of the default settings. (Unlikely... but IS possible)
-    pub fn open<T: AsRef<Path>>(path: T, settings: &serialport::SerialPortSettings) -> io::Result<Self> {
+    /// Open a nonblocking serial port from the provided path.
+    pub fn from_path<T: AsRef<Path>>(path: T, settings: &SerialPortSettings) -> io::Result<Self> {
         let port = TTYPort::open(path.as_ref(), settings)?;
 
-        
-        // Set the O_NONBLOCK flag
+        // Remove 'Exclusive' access set by TTYPort
+        ioctl_rs::tiocnxcl(port.as_raw_fd())?;
+
+        // Get the termios structure
+        let mut t = termios::Termios::from_fd(port.as_raw_fd())?;
+
+        // termios::cfmakeraw(&mut t);
+
+        // Set VMIN = 1 to block until at least one character is received.
+        t.c_cc[termios::VMIN] = 1;
+        termios::tcsetattr(port.as_raw_fd(), termios::TCSANOW, &t)?;
+
+        // Set the O_NONBLOCK flag.
         let flags = unsafe { libc::fcntl(port.as_raw_fd(), libc::F_GETFL) };
         if flags < 0 {
             return Err(io::Error::last_os_error())
         }
         
         match unsafe { libc::fcntl(port.as_raw_fd(), libc::F_SETFL, flags | libc::O_NONBLOCK) } {
-            x if x >= 0  => Ok(PosixSerial{inner: port}),
+            x if x >= 0 => {
+                Ok(Serial{inner: port})
+            },
             _ =>  Err(io::Error::last_os_error()),
         }
+
     }
+
 }
 
-impl serialport::SerialPort for PosixSerial {
-    // Port settings getters
+impl SerialPort for Serial {
 
     /// Returns a struct with the current port settings
-    fn settings(&self) -> ::SerialPortSettings {
+    fn settings(&self) -> SerialPortSettings {
         self.inner.settings()
     }
 
@@ -130,7 +113,7 @@ impl serialport::SerialPort for PosixSerial {
 
     /// Returns the current timeout.
     fn timeout(&self) -> Duration {
-        self.inner.timeout()
+        Duration::from_secs(0)
     }
 
     // Port settings setters
@@ -138,7 +121,7 @@ impl serialport::SerialPort for PosixSerial {
     /// Applies all settings for a struct. This isn't guaranteed to involve only
     /// a single call into the driver, though that may be done on some
     /// platforms.
-    fn set_all(&mut self, settings: &::SerialPortSettings) -> serialport::Result<()> {
+    fn set_all(&mut self, settings: &SerialPortSettings) -> serialport::Result<()> {
         self.inner.set_all(settings)
     }
 
@@ -272,9 +255,10 @@ impl serialport::SerialPort for PosixSerial {
     fn read_carrier_detect(&mut self) -> serialport::Result<bool> {
         self.inner.read_carrier_detect()
     }
+
 }
 
-impl Read for PosixSerial {
+impl Read for Serial {
     fn read(&mut self, bytes: &mut [u8]) -> io::Result<usize> {
         match unsafe { libc::read(self.as_raw_fd(), bytes.as_ptr() as *mut libc::c_void, bytes.len() as libc::size_t) } {
             x if x >= 0 => Ok(x as usize),
@@ -283,7 +267,16 @@ impl Read for PosixSerial {
     }
 }
 
-impl Write for PosixSerial {
+impl<'a> Read for &'a Serial {
+    fn read(&mut self, bytes: &mut [u8]) -> io::Result<usize> {
+        match unsafe { libc::read(self.as_raw_fd(), bytes.as_ptr() as *mut libc::c_void, bytes.len() as libc::size_t) } {
+            x if x >= 0 => Ok(x as usize),
+            _ => Err(io::Error::last_os_error()),
+        }
+    }
+}
+
+impl Write for Serial {
     fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
         match unsafe { libc::write(self.as_raw_fd(), bytes.as_ptr() as *const libc::c_void, bytes.len() as libc::size_t) } {
             x if x >= 0 => Ok(x as usize),
@@ -292,19 +285,33 @@ impl Write for PosixSerial {
     }
 
     fn flush(&mut self) -> io::Result<()> {
-        self.inner.flush()
+        termios::tcdrain(self.inner.as_raw_fd())
+        //self.inner.flush()
     }
 }
 
-impl AsRawFd for PosixSerial {
+impl<'a> Write for &'a Serial {
+    fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
+        match unsafe { libc::write(self.as_raw_fd(), bytes.as_ptr() as *const libc::c_void, bytes.len() as libc::size_t) } {
+            x if x >= 0 => Ok(x as usize),
+            _ => Err(io::Error::last_os_error()),
+        }
+    }
 
+    fn flush(&mut self) -> io::Result<()> {
+        termios::tcdrain(self.inner.as_raw_fd())
+    }
+}
+
+
+impl AsRawFd for Serial {
     fn as_raw_fd(&self) -> RawFd {
         self.inner.as_raw_fd()
     }
 
 }
 
-impl Evented for PosixSerial {
+impl Evented for Serial {
     fn register(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> io::Result<()> {
         EventedFd(&self.as_raw_fd()).register(poll, token, interest, opts)
     }
@@ -317,4 +324,3 @@ impl Evented for PosixSerial {
         EventedFd(&self.as_raw_fd()).deregister(poll)
     }
 }
-
