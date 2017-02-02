@@ -16,43 +16,55 @@ use serialport::prelude::*;
 use termios;
 use ioctl_rs;
 
-/// mio-compatable serial port for *nix
+fn _set_raw_and_nonblocking(port: &TTYPort) -> io::Result<()> {
+
+    // Remove 'Exclusive' access set by TTYPort
+    ioctl_rs::tiocnxcl(port.as_raw_fd())?;
+
+    // Get the termios structure
+    let mut t = termios::Termios::from_fd(port.as_raw_fd())?;
+
+    // termios::cfmakeraw(&mut t);
+
+    // Set VMIN = 1 to block until at least one character is received.
+    t.c_cc[termios::VMIN] = 1;
+    termios::tcsetattr(port.as_raw_fd(), termios::TCSANOW, &t)?;
+
+    // Set the O_NONBLOCK flag.
+    let flags = unsafe { libc::fcntl(port.as_raw_fd(), libc::F_GETFL) };
+    if flags < 0 {
+        return Err(io::Error::last_os_error())
+    }
+    
+    if unsafe { libc::fcntl(port.as_raw_fd(), libc::F_SETFL, flags | libc::O_NONBLOCK) } == 0 {
+        Ok(())
+    }
+    else {
+        Err(io::Error::last_os_error())
+    }
+
+}
+
+/// *nix serial port using termios
 pub struct Serial {
-    inner: serialport::posix::TTYPort,
+    inner: TTYPort,
 }
 
 impl Serial  {
 
+
     /// Open a nonblocking serial port from the provided path.
     pub fn from_path<T: AsRef<Path>>(path: T, settings: &SerialPortSettings) -> io::Result<Self> {
         let port = TTYPort::open(path.as_ref(), settings)?;
-
-        // Remove 'Exclusive' access set by TTYPort
-        ioctl_rs::tiocnxcl(port.as_raw_fd())?;
-
-        // Get the termios structure
-        let mut t = termios::Termios::from_fd(port.as_raw_fd())?;
-
-        // termios::cfmakeraw(&mut t);
-
-        // Set VMIN = 1 to block until at least one character is received.
-        t.c_cc[termios::VMIN] = 1;
-        termios::tcsetattr(port.as_raw_fd(), termios::TCSANOW, &t)?;
-
-        // Set the O_NONBLOCK flag.
-        let flags = unsafe { libc::fcntl(port.as_raw_fd(), libc::F_GETFL) };
-        if flags < 0 {
-            return Err(io::Error::last_os_error())
-        }
-        
-        match unsafe { libc::fcntl(port.as_raw_fd(), libc::F_SETFL, flags | libc::O_NONBLOCK) } {
-            x if x >= 0 => {
-                Ok(Serial{inner: port})
-            },
-            _ =>  Err(io::Error::last_os_error()),
-        }
-
+        Serial::from_serial_port(port)
     }
+
+    /// Convert an existing serialport TTY struct.
+    pub fn from_serial_port(port: TTYPort) -> io::Result<Self> {
+        _set_raw_and_nonblocking(&port)?;
+        Ok(Serial{inner: port})
+    }
+
 
 }
 
@@ -267,15 +279,6 @@ impl Read for Serial {
     }
 }
 
-impl<'a> Read for &'a Serial {
-    fn read(&mut self, bytes: &mut [u8]) -> io::Result<usize> {
-        match unsafe { libc::read(self.as_raw_fd(), bytes.as_ptr() as *mut libc::c_void, bytes.len() as libc::size_t) } {
-            x if x >= 0 => Ok(x as usize),
-            _ => Err(io::Error::last_os_error()),
-        }
-    }
-}
-
 impl Write for Serial {
     fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
         match unsafe { libc::write(self.as_raw_fd(), bytes.as_ptr() as *const libc::c_void, bytes.len() as libc::size_t) } {
@@ -287,6 +290,15 @@ impl Write for Serial {
     fn flush(&mut self) -> io::Result<()> {
         termios::tcdrain(self.inner.as_raw_fd())
         //self.inner.flush()
+    }
+}
+
+impl<'a> Read for &'a Serial {
+    fn read(&mut self, bytes: &mut [u8]) -> io::Result<usize> {
+        match unsafe { libc::read(self.as_raw_fd(), bytes.as_ptr() as *mut libc::c_void, bytes.len() as libc::size_t) } {
+            x if x >= 0 => Ok(x as usize),
+            _ => Err(io::Error::last_os_error()),
+        }
     }
 }
 
@@ -310,6 +322,22 @@ impl AsRawFd for Serial {
     }
 
 }
+
+// TODO: Add IntoRawFd once landed in upstream
+// impl IntoRawFd for Serial {
+//     fn into_raw_fd(self) -> RawFd {
+//         self.inner.into_raw_fd()
+//     }
+// }
+
+// TODO: Add FromRawFd once landed in upstream
+// impl FromRawFd for Serial {
+//     unsafe fn from_raw_fd(fd: RawFd) -> Self {
+//         let port = unsafe TTYport::from_raw_fd(fd);
+//         Serial{inner: port}
+//     }
+// }
+
 
 impl Evented for Serial {
     fn register(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> io::Result<()> {
