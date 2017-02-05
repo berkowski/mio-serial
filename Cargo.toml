@@ -18,8 +18,10 @@ mio = "0.6"
 libc = "0.2"
 serialport = "0.3"
 termios = "0.2"
-ioctl-rs = "0.1"
 
 [[example]]
 name = "serial_printline"
 path = "examples/serial_printline.rs"
+
+[replace]
+"serialport:0.3.0" = {git = "https://gitlab.com/berkowski/serialport-rs", branch = "ptty"}

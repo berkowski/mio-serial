@@ -17,8 +17,6 @@ extern crate mio;
 extern crate libc;
 #[cfg(unix)]
 extern crate termios;
-#[cfg(unix)]
-extern crate ioctl_rs;
 
 // Enums, Structs, and Traits from the serialport crate 
 pub use serialport::{

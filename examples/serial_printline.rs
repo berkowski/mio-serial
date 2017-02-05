@@ -6,16 +6,26 @@ use mio::{Poll, PollOpt, Events, Token, Ready};
 use std::time::Duration;
 use std::str;
 use std::io::Read;
+use std::env;
 
 const SERIAL_TOKEN: Token = Token(0);
 
 pub fn main() {
+
+    let mut args = env::args();
+    let tty_path = args.nth(1).unwrap_or("/dev/ttyUSB0".into());
+
     let poll = Poll::new().unwrap();
     let mut events = Events::with_capacity(1024);
 
     // Create the listener
     let settings = mio_serial::SerialPortSettings::default();
-    let mut rx = mio_serial::Serial::from_path("/tmp/ttyUSB0", &settings).unwrap();
+
+    println!("Opening {} at 9600,8N1", tty_path);
+    let mut rx = mio_serial::Serial::from_path(&tty_path, &settings).unwrap();
+
+    // Disable exclusive mode
+    rx.set_exclusive(false).expect("Unable to set serial port into non-exclusive mode.");
 
     poll.register(&rx, SERIAL_TOKEN, Ready::readable(), PollOpt::level()).unwrap();
 

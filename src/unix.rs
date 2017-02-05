@@ -14,36 +14,7 @@ use serialport::posix::TTYPort;
 use serialport::prelude::*;
 
 use termios;
-use ioctl_rs;
 
-fn _set_raw_and_nonblocking(port: &TTYPort) -> io::Result<()> {
-
-    // Remove 'Exclusive' access set by TTYPort
-    ioctl_rs::tiocnxcl(port.as_raw_fd())?;
-
-    // Get the termios structure
-    let mut t = termios::Termios::from_fd(port.as_raw_fd())?;
-
-    // termios::cfmakeraw(&mut t);
-
-    // Set VMIN = 1 to block until at least one character is received.
-    t.c_cc[termios::VMIN] = 1;
-    termios::tcsetattr(port.as_raw_fd(), termios::TCSANOW, &t)?;
-
-    // Set the O_NONBLOCK flag.
-    let flags = unsafe { libc::fcntl(port.as_raw_fd(), libc::F_GETFL) };
-    if flags < 0 {
-        return Err(io::Error::last_os_error())
-    }
-    
-    if unsafe { libc::fcntl(port.as_raw_fd(), libc::F_SETFL, flags | libc::O_NONBLOCK) } == 0 {
-        Ok(())
-    }
-    else {
-        Err(io::Error::last_os_error())
-    }
-
-}
 
 /// *nix serial port using termios
 pub struct Serial {
@@ -61,10 +32,66 @@ impl Serial  {
 
     /// Convert an existing serialport TTY struct.
     pub fn from_serial_port(port: TTYPort) -> io::Result<Self> {
-        _set_raw_and_nonblocking(&port)?;
-        Ok(Serial{inner: port})
+
+        // Get the termios structure
+        let mut t = termios::Termios::from_fd(port.as_raw_fd())?;
+
+        // Set VMIN = 1 to block until at least one character is received.
+        t.c_cc[termios::VMIN] = 1;
+        termios::tcsetattr(port.as_raw_fd(), termios::TCSANOW, &t)?;
+
+        // Set the O_NONBLOCK flag.
+        let flags = unsafe { libc::fcntl(port.as_raw_fd(), libc::F_GETFL) };
+        if flags < 0 {
+            return Err(io::Error::last_os_error())
+        }
+        
+        match unsafe { libc::fcntl(port.as_raw_fd(), libc::F_SETFL, flags | libc::O_NONBLOCK) } {
+            0 => Ok(Serial{inner: port}),
+            _ => Err(io::Error::last_os_error())
+        }
+
     }
 
+    /// Create a pair of pseudo serial terminals
+    ///
+    /// ## Returns
+    /// Two connected, unnamed `Serial` objects.
+    ///
+    /// ## Errors
+    /// Attempting any IO or parameter settings on the slave tty after the master 
+    /// tty is closed will return errors.
+    /// 
+    pub fn pair() -> ::SerialResult<(Self, Self)> {
+        let (master, slave) = TTYPort::pair()?;
+
+        let master = Self::from_serial_port(master)?;
+        let slave = Self::from_serial_port(slave)?;
+
+        Ok((master, slave))
+    }
+
+    /// Sets the exclusivity of the port
+    ///
+    /// If a port is exclusive, then trying to open the same device path again
+    /// will fail.
+    ///
+    /// See the man pages for the tiocexcl and tiocnxcl ioctl's for more details.
+    ///
+    /// ## Errors
+    ///
+    /// * `Io` for any error while setting exclusivity for the port.
+    pub fn set_exclusive(&mut self, exclusive: bool) -> ::SerialResult<()> {
+        self.inner.set_exclusive(exclusive)
+    }
+
+    /// Returns the exclusivity of the port
+    ///
+    /// If a port is exclusive, then trying to open the same device path again
+    /// will fail.
+    pub fn exclusive(&self) -> bool {
+        self.inner.exclusive()
+    }
 
 }
 
@@ -73,6 +100,11 @@ impl SerialPort for Serial {
     /// Returns a struct with the current port settings
     fn settings(&self) -> SerialPortSettings {
         self.inner.settings()
+    }
+
+    /// Return the name associated with the serial port, if known.
+    fn port_name(&self) -> Option<String> {
+        self.inner.port_name()
     }
 
     /// Returns the current baud rate.
@@ -323,20 +355,20 @@ impl AsRawFd for Serial {
 
 }
 
-// TODO: Add IntoRawFd once landed in upstream
-// impl IntoRawFd for Serial {
-//     fn into_raw_fd(self) -> RawFd {
-//         self.inner.into_raw_fd()
-//     }
-// }
 
-// TODO: Add FromRawFd once landed in upstream
-// impl FromRawFd for Serial {
-//     unsafe fn from_raw_fd(fd: RawFd) -> Self {
-//         let port = unsafe TTYport::from_raw_fd(fd);
-//         Serial{inner: port}
-//     }
-// }
+impl IntoRawFd for Serial {
+    fn into_raw_fd(self) -> RawFd {
+        self.inner.into_raw_fd()
+    }
+}
+
+
+impl FromRawFd for Serial {
+    unsafe fn from_raw_fd(fd: RawFd) -> Self {
+        let port = TTYPort::from_raw_fd(fd);
+        Serial{inner: port}
+    }
+}
 
 
 impl Evented for Serial {
