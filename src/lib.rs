@@ -1,7 +1,7 @@
 //! # mio-serial - Serial port I/O for mio
 //!
 //! This crate provides a serial port implementation compatable with mio.
-//! 
+//!
 //! **At this time this crate ONLY provides a unix implementation**
 //!
 //! ## Links
@@ -18,37 +18,32 @@ extern crate libc;
 #[cfg(unix)]
 extern crate termios;
 
-// Enums, Structs, and Traits from the serialport crate 
-pub use serialport::{
-    // Traits
-    SerialPort,
+// Enums, Structs, and Traits from the serialport crate
+pub use serialport::{// Traits
+                     SerialPort,
 
-    // Structs
-    SerialPortInfo,
-    SerialPortSettings,
+                     // Structs
+                     SerialPortInfo,
+                     SerialPortSettings,
 
-    // Enums
-    DataBits,
-    StopBits,
-    Parity,
-    BaudRate,
-    FlowControl,
-};
+                     // Enums
+                     DataBits,
+                     StopBits,
+                     Parity,
+                     BaudRate,
+                     FlowControl};
 
 // The serialport Result type, used in SerialPort trait.
 pub use serialport::Result as SerialResult;
 
 // Some enumeration functions from the serialport crate
-pub use serialport::{
-    available_baud_rates,
-    available_ports,
-};
+pub use serialport::{available_baud_rates, available_ports};
 
 #[cfg(unix)]
 mod unix;
 
 #[cfg(windows)]
-mod widows;
+mod windows;
 
 #[cfg(unix)]
 pub use unix::Serial;

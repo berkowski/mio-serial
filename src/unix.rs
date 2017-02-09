@@ -21,17 +21,15 @@ pub struct Serial {
     inner: TTYPort,
 }
 
-impl Serial  {
-
-
+impl Serial {
     /// Open a nonblocking serial port from the provided path.
     pub fn from_path<T: AsRef<Path>>(path: T, settings: &SerialPortSettings) -> io::Result<Self> {
         let port = TTYPort::open(path.as_ref(), settings)?;
-        Serial::from_serial_port(port)
+        Serial::from_serial(port)
     }
 
-    /// Convert an existing serialport TTY struct.
-    pub fn from_serial_port(port: TTYPort) -> io::Result<Self> {
+    /// Convert an existing `serialport::posix::TTYPort` struct.
+    pub fn from_serial(port: TTYPort) -> io::Result<Self> {
 
         // Get the termios structure
         let mut t = termios::Termios::from_fd(port.as_raw_fd())?;
@@ -43,12 +41,12 @@ impl Serial  {
         // Set the O_NONBLOCK flag.
         let flags = unsafe { libc::fcntl(port.as_raw_fd(), libc::F_GETFL) };
         if flags < 0 {
-            return Err(io::Error::last_os_error())
+            return Err(io::Error::last_os_error());
         }
-        
+
         match unsafe { libc::fcntl(port.as_raw_fd(), libc::F_SETFL, flags | libc::O_NONBLOCK) } {
-            0 => Ok(Serial{inner: port}),
-            _ => Err(io::Error::last_os_error())
+            0 => Ok(Serial { inner: port }),
+            _ => Err(io::Error::last_os_error()),
         }
 
     }
@@ -59,14 +57,14 @@ impl Serial  {
     /// Two connected, unnamed `Serial` objects.
     ///
     /// ## Errors
-    /// Attempting any IO or parameter settings on the slave tty after the master 
+    /// Attempting any IO or parameter settings on the slave tty after the master
     /// tty is closed will return errors.
-    /// 
+    ///
     pub fn pair() -> ::SerialResult<(Self, Self)> {
         let (master, slave) = TTYPort::pair()?;
 
-        let master = Self::from_serial_port(master)?;
-        let slave = Self::from_serial_port(slave)?;
+        let master = Self::from_serial(master)?;
+        let slave = Self::from_serial(slave)?;
 
         Ok((master, slave))
     }
@@ -92,11 +90,9 @@ impl Serial  {
     pub fn exclusive(&self) -> bool {
         self.inner.exclusive()
     }
-
 }
 
 impl SerialPort for Serial {
-
     /// Returns a struct with the current port settings
     fn settings(&self) -> SerialPortSettings {
         self.inner.settings()
@@ -299,12 +295,15 @@ impl SerialPort for Serial {
     fn read_carrier_detect(&mut self) -> serialport::Result<bool> {
         self.inner.read_carrier_detect()
     }
-
 }
 
 impl Read for Serial {
     fn read(&mut self, bytes: &mut [u8]) -> io::Result<usize> {
-        match unsafe { libc::read(self.as_raw_fd(), bytes.as_ptr() as *mut libc::c_void, bytes.len() as libc::size_t) } {
+        match unsafe {
+            libc::read(self.as_raw_fd(),
+                       bytes.as_ptr() as *mut libc::c_void,
+                       bytes.len() as libc::size_t)
+        } {
             x if x >= 0 => Ok(x as usize),
             _ => Err(io::Error::last_os_error()),
         }
@@ -313,7 +312,11 @@ impl Read for Serial {
 
 impl Write for Serial {
     fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
-        match unsafe { libc::write(self.as_raw_fd(), bytes.as_ptr() as *const libc::c_void, bytes.len() as libc::size_t) } {
+        match unsafe {
+            libc::write(self.as_raw_fd(),
+                        bytes.as_ptr() as *const libc::c_void,
+                        bytes.len() as libc::size_t)
+        } {
             x if x >= 0 => Ok(x as usize),
             _ => Err(io::Error::last_os_error()),
         }
@@ -327,7 +330,11 @@ impl Write for Serial {
 
 impl<'a> Read for &'a Serial {
     fn read(&mut self, bytes: &mut [u8]) -> io::Result<usize> {
-        match unsafe { libc::read(self.as_raw_fd(), bytes.as_ptr() as *mut libc::c_void, bytes.len() as libc::size_t) } {
+        match unsafe {
+            libc::read(self.as_raw_fd(),
+                       bytes.as_ptr() as *mut libc::c_void,
+                       bytes.len() as libc::size_t)
+        } {
             x if x >= 0 => Ok(x as usize),
             _ => Err(io::Error::last_os_error()),
         }
@@ -336,7 +343,11 @@ impl<'a> Read for &'a Serial {
 
 impl<'a> Write for &'a Serial {
     fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
-        match unsafe { libc::write(self.as_raw_fd(), bytes.as_ptr() as *const libc::c_void, bytes.len() as libc::size_t) } {
+        match unsafe {
+            libc::write(self.as_raw_fd(),
+                        bytes.as_ptr() as *const libc::c_void,
+                        bytes.len() as libc::size_t)
+        } {
             x if x >= 0 => Ok(x as usize),
             _ => Err(io::Error::last_os_error()),
         }
@@ -352,9 +363,7 @@ impl AsRawFd for Serial {
     fn as_raw_fd(&self) -> RawFd {
         self.inner.as_raw_fd()
     }
-
 }
-
 
 impl IntoRawFd for Serial {
     fn into_raw_fd(self) -> RawFd {
@@ -366,17 +375,27 @@ impl IntoRawFd for Serial {
 impl FromRawFd for Serial {
     unsafe fn from_raw_fd(fd: RawFd) -> Self {
         let port = TTYPort::from_raw_fd(fd);
-        Serial{inner: port}
+        Serial { inner: port }
     }
 }
 
 
 impl Evented for Serial {
-    fn register(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> io::Result<()> {
+    fn register(&self,
+                poll: &Poll,
+                token: Token,
+                interest: Ready,
+                opts: PollOpt)
+                -> io::Result<()> {
         EventedFd(&self.as_raw_fd()).register(poll, token, interest, opts)
     }
 
-    fn reregister(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> io::Result<()> {
+    fn reregister(&self,
+                  poll: &Poll,
+                  token: Token,
+                  interest: Ready,
+                  opts: PollOpt)
+                  -> io::Result<()> {
         EventedFd(&self.as_raw_fd()).reregister(poll, token, interest, opts)
     }
 

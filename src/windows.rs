@@ -28,18 +28,15 @@ pub struct Serial {
     inner: serialport::windows::COMPort,
 }
 
-impl Serial  {
-
+impl Serial {
     pub fn from_path<T: AsRef<Path>>(path: T, settings: &SerialPortSettings) -> io::Result<Self> {
         COMPort.open(path.as_ref(), settings)
-            .map(|port| ::Serial{inner: port})
+            .map(|port| ::Serial { inner: port })
             .map_err(|_| Err(io::Error::last_os_error))
     }
-
 }
 
 impl SerialPort for Serial {
-
     /// Returns a struct with the current port settings
     fn settings(&self) -> SerialPortSettings {
         self.inner.settings()
@@ -237,12 +234,15 @@ impl SerialPort for Serial {
     fn read_carrier_detect(&mut self) -> serialport::Result<bool> {
         self.inner.read_carrier_detect()
     }
-
 }
 
 impl Read for Serial {
     fn read(&mut self, bytes: &mut [u8]) -> io::Result<usize> {
-        match unsafe { libc::read(self.as_raw_fd(), bytes.as_ptr() as *mut libc::c_void, bytes.len() as libc::size_t) } {
+        match unsafe {
+            libc::read(self.as_raw_fd(),
+                       bytes.as_ptr() as *mut libc::c_void,
+                       bytes.len() as libc::size_t)
+        } {
             x if x >= 0 => Ok(x as usize),
             _ => Err(io::Error::last_os_error()),
         }
@@ -251,7 +251,11 @@ impl Read for Serial {
 
 impl Write for Serial {
     fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
-        match unsafe { libc::write(self.as_raw_fd(), bytes.as_ptr() as *const libc::c_void, bytes.len() as libc::size_t) } {
+        match unsafe {
+            libc::write(self.as_raw_fd(),
+                        bytes.as_ptr() as *const libc::c_void,
+                        bytes.len() as libc::size_t)
+        } {
             x if x >= 0 => Ok(x as usize),
             _ => Err(io::Error::last_os_error()),
         }
@@ -266,15 +270,24 @@ impl AsRawFd for Serial {
     fn as_raw_fd(&self) -> RawFd {
         self.inner.as_raw_fd()
     }
-
 }
 
 impl Evented for Serial {
-    fn register(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> io::Result<()> {
+    fn register(&self,
+                poll: &Poll,
+                token: Token,
+                interest: Ready,
+                opts: PollOpt)
+                -> io::Result<()> {
         EventedFd(&self.as_raw_fd()).register(poll, token, interest, opts)
     }
 
-    fn reregister(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> io::Result<()> {
+    fn reregister(&self,
+                  poll: &Poll,
+                  token: Token,
+                  interest: Ready,
+                  opts: PollOpt)
+                  -> io::Result<()> {
         EventedFd(&self.as_raw_fd()).reregister(poll, token, interest, opts)
     }
 
@@ -282,4 +295,3 @@ impl Evented for Serial {
         EventedFd(&self.as_raw_fd()).deregister(poll)
     }
 }
-

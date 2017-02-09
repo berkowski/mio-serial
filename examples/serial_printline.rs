@@ -46,13 +46,14 @@ pub fn main() {
             };
 
             match bytes_read {
-                Ok(b) => match b {
-                    b if b > 0 => println!("{:?}", String::from_utf8_lossy(&rx_buf[..b])),
-                    _ => println!("Read would have blocked."),
-                }, 
+                Ok(b) => {
+                    match b {
+                        b if b > 0 => println!("{:?}", String::from_utf8_lossy(&rx_buf[..b])),
+                        _ => println!("Read would have blocked."),
+                    }
+                }
                 Err(e) => println!("Error:  {}", e),
             }
         }
     }
 }
-
