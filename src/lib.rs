@@ -40,10 +40,10 @@ pub use serialport::Result as SerialResult;
 pub use serialport::{available_baud_rates, available_ports};
 
 #[cfg(unix)]
-mod unix;
+pub mod unix;
 
 #[cfg(windows)]
-mod windows;
+pub mod windows;
 
 #[cfg(unix)]
 pub use unix::Serial;

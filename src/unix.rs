@@ -1,4 +1,4 @@
-
+//! Unix impl of mio-enabled serial ports.
 use std::os::unix::prelude::*;
 use std::io::{self, Read, Write};
 use std::path::Path;
@@ -23,12 +23,41 @@ pub struct Serial {
 
 impl Serial {
     /// Open a nonblocking serial port from the provided path.
+    ///
+    /// ## Example
+    ///
+    /// ```ignore
+    /// use std::path::Path;
+    /// use mio_serial::unix::Serial;
+    /// use mio_serial::SerialPortSettings;
+    ///
+    /// let tty_name = Path::new("/dev/ttyUSB0");
+    ///
+    /// let serial = Serial::from_path(tty_name, &SerialPortSettings::default()).unwrap();
+    /// ```
     pub fn from_path<T: AsRef<Path>>(path: T, settings: &SerialPortSettings) -> io::Result<Self> {
         let port = TTYPort::open(path.as_ref(), settings)?;
         Serial::from_serial(port)
     }
 
     /// Convert an existing `serialport::posix::TTYPort` struct.
+    ///
+    ///
+    /// ## Example
+    ///
+    /// ```ignore
+    /// extern crate serialport;
+    ///
+    /// use std::path::Path;
+    /// use serialport::posix::TTYPort;
+    /// use mio_serial::unix::Serial;
+    ///
+    /// let tty_name = Path::new("/dev/ttyUSB0");
+    /// let blocking_serial = TTYPort::open(tty_path).unwrap();
+    ///
+    /// let serial = Serial::from_serial(blocking_serial).unwrap();
+    /// # fn main() {}
+    /// ```
     pub fn from_serial(port: TTYPort) -> io::Result<Self> {
 
         // Get the termios structure
@@ -54,12 +83,19 @@ impl Serial {
     /// Create a pair of pseudo serial terminals
     ///
     /// ## Returns
-    /// Two connected, unnamed `Serial` objects.
+    /// Two connected `Serial` objects: `(master, slave)`
     ///
     /// ## Errors
     /// Attempting any IO or parameter settings on the slave tty after the master
     /// tty is closed will return errors.
     ///
+    /// ## Examples
+    ///
+    /// ```
+    /// use mio_serial::unix::Serial;
+    ///
+    /// let (master, slave) = Serial::pair().unwrap();
+    /// ```
     pub fn pair() -> ::SerialResult<(Self, Self)> {
         let (master, slave) = TTYPort::pair()?;
 
