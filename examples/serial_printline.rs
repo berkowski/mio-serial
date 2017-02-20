@@ -27,12 +27,12 @@ pub fn main() {
     // Disable exclusive mode
     rx.set_exclusive(false).expect("Unable to set serial port into non-exclusive mode.");
 
-    poll.register(&rx, SERIAL_TOKEN, Ready::readable(), PollOpt::level()).unwrap();
+    poll.register(&rx, SERIAL_TOKEN, Ready::readable() | Ready::hup() | Ready::error(), PollOpt::edge()).unwrap();
 
     let mut rx_buf = [0u8; 1024];
 
-    loop {
-        poll.poll(&mut events, Some(Duration::from_secs(1))).unwrap();
+    'outer: loop {
+        poll.poll(&mut events, None).unwrap();
 
         if events.len() == 0 {
             println!("Read timed out!");
@@ -40,19 +40,26 @@ pub fn main() {
         }
 
         for event in events.iter() {
-            let bytes_read = match event.token() {
-                SERIAL_TOKEN => rx.read(&mut rx_buf),
-                _ => unreachable!(),
-            };
-
-            match bytes_read {
-                Ok(b) => {
-                    match b {
-                        b if b > 0 => println!("{:?}", String::from_utf8_lossy(&rx_buf[..b])),
-                        _ => println!("Read would have blocked."),
+            match event.token() {
+                SERIAL_TOKEN => {
+                    let ready = event.kind();
+                    if ready.contains(Ready::hup() | Ready::error()) {
+                        println!("Quitting due to event: {:?}", ready);
+                        break 'outer;
                     }
-                }
-                Err(e) => println!("Error:  {}", e),
+                    if ready.is_readable() {
+                        match rx.read(&mut rx_buf) {
+                            Ok(b) => {
+                                match b {
+                                    b if b > 0 => println!("{:?}", String::from_utf8_lossy(&rx_buf[..b])),
+                                    _ => println!("Read would have blocked."),
+                                }
+                            }
+                            Err(e) => println!("Error:  {}", e),
+                        }
+                    }
+                },
+                t @ _ => unreachable!("Unexpected token: {:?}", t),
             }
         }
     }
