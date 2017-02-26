@@ -8,9 +8,7 @@ sudo: required
 
 # This is the Rust channel that build jobs will use by default but can be
 # overridden on a case by case basis down below
-rust: 
-  - stable
-  - beta
+rust: stable
 
 env:
   global:
