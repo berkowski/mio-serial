@@ -3,6 +3,7 @@
 set -ex
 
 main() {
+
     # Build debug and release targets
     cross build --target $TARGET
     cross build --target $TARGET --release

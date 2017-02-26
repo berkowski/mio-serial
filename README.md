@@ -1,6 +1,6 @@
 # mio-serial: A serial port IO library MIO.
 
-[![Build Status](https://travis-ci.org/berkowski/mio-serial?branch=master)](https://travis-ci.org/berkowski/mio-serial)
+[![Build Status](https://travis-ci.org/berkowski/mio-serial.svg?branch=master)](https://travis-ci.org/berkowski/mio-serial)
 [![crates.io](http://meritbadge.herokuapp.com/mio-serial)](https://crates.io/crates/mio-serial)
 [![docs.rs](https://docs.rs/mio-serial/badge.svg)](https://docs.rs/mio-serial)
 

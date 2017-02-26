@@ -22,8 +22,8 @@ matrix:
   # don't need
   include:
     # Linux
-    - env: TARGET=i686-unknown-linux-gnu
-    - env: TARGET=i686-unknown-linux-musl
+    - env: TARGET=i686-unknown-linux-gnu DISABLE_TESTS=1
+    - env: TARGET=i686-unknown-linux-musl DISABLE_TESTS=1
     # - env: TARGET=x86_64-unknown-linux-gnu  # this is the default job
     - env: TARGET=x86_64-unknown-linux-musl
 
@@ -39,17 +39,17 @@ matrix:
     - env: TARGET=x86_64-unknown-netbsd DISABLE_TESTS=1
 
     # Other architectures
-    - env: TARGET=aarch64-unknown-linux-gnu
-    - env: TARGET=armv7-unknown-linux-gnueabihf
-    - env: TARGET=mips-unknown-linux-gnu
+    - env: TARGET=aarch64-unknown-linux-gnu DISABLE_TESTS=1
+    - env: TARGET=armv7-unknown-linux-gnueabihf DISABLE_TESTS=1
+    - env: TARGET=mips-unknown-linux-gnu DISABLE_TESTS=1
     # - env: TARGET=mips64-unknown-linux-gnuabi64
     # - env: TARGET=mips64el-unknown-linux-gnuabi64
-    - env: TARGET=mipsel-unknown-linux-gnu
-    - env: TARGET=powerpc-unknown-linux-gnu
+    - env: TARGET=mipsel-unknown-linux-gnu DISABLE_TESTS=1
+    - env: TARGET=powerpc-unknown-linux-gnu DISABLE_TESTS=1
     # - env: TARGET=powerpc64-unknown-linux-gnu
     # - env: TARGET=powerpc64le-unknown-linux-gnu
     # - env: TARGET=s390x-unknown-linux-gnu
-    - env: TARGET=arm-unknown-linux-gnueabi
+    - env: TARGET=arm-unknown-linux-gnueabi DISABLE_TESTS=1
     # - env: TARGET=arm-unknown-linux-musleabi
 
     # Testing other channels

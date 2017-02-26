@@ -4,6 +4,8 @@ main() {
     curl https://sh.rustup.rs -sSf | \
         sh -s -- -y --default-toolchain $TRAVIS_RUST_VERSION
 
+    local cross_ver=v0.1.9
+
     local target=
     if [ $TRAVIS_OS_NAME = linux ]; then
         target=x86_64-unknown-linux-gnu
@@ -17,8 +19,13 @@ main() {
         sh -s -- \
            --force \
            --git japaric/cross \
-           --tag v0.1.4 \
+           --tag $cross_ver \
            --target $target
+
+    # Build custom linux docker images
+    if [ $TARGET != ${TARGET#*linux} ]; then
+	docker build -t mio-serial/$TARGET ci/docker/$TARGET
+    fi
 }
 
 main

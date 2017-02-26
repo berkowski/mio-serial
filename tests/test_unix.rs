@@ -21,6 +21,7 @@ fn get_available_serialport_name() -> Option<String> {
 }
 
 #[test]
+#[ignore]
 fn test_from_path() {
 
     let tty_path = get_available_serialport_name().expect("No available serial ports.");
@@ -33,6 +34,7 @@ fn test_from_path() {
 }
 
 #[test]
+#[ignore]
 fn test_from_serial() {
 
     let tty_path = get_available_serialport_name().expect("No available serial ports.");
