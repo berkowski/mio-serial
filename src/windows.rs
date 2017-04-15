@@ -30,7 +30,8 @@ pub struct Serial {
 
 impl Serial {
     pub fn from_path<T: AsRef<Path>>(path: T, settings: &SerialPortSettings) -> io::Result<Self> {
-        COMPort.open(path.as_ref(), settings)
+        COMPort
+            .open(path.as_ref(), settings)
             .map(|port| ::Serial { inner: port })
             .map_err(|_| Err(io::Error::last_os_error))
     }
@@ -239,10 +240,10 @@ impl SerialPort for Serial {
 impl Read for Serial {
     fn read(&mut self, bytes: &mut [u8]) -> io::Result<usize> {
         match unsafe {
-            libc::read(self.as_raw_fd(),
-                       bytes.as_ptr() as *mut libc::c_void,
-                       bytes.len() as libc::size_t)
-        } {
+                  libc::read(self.as_raw_fd(),
+                             bytes.as_ptr() as *mut libc::c_void,
+                             bytes.len() as libc::size_t)
+              } {
             x if x >= 0 => Ok(x as usize),
             _ => Err(io::Error::last_os_error()),
         }
@@ -252,10 +253,10 @@ impl Read for Serial {
 impl Write for Serial {
     fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
         match unsafe {
-            libc::write(self.as_raw_fd(),
-                        bytes.as_ptr() as *const libc::c_void,
-                        bytes.len() as libc::size_t)
-        } {
+                  libc::write(self.as_raw_fd(),
+                              bytes.as_ptr() as *const libc::c_void,
+                              bytes.len() as libc::size_t)
+              } {
             x if x >= 0 => Ok(x as usize),
             _ => Err(io::Error::last_os_error()),
         }

@@ -41,7 +41,7 @@ fn test_from_serial() {
 
     let tty_port = serialport::posix::TTYPort::open(Path::new(&tty_path),
                                                     &mio_serial::SerialPortSettings::default())
-        .expect(&format!("Unable to open serial port: {}", &tty_path));
+            .expect(&format!("Unable to open serial port: {}", &tty_path));
 
     let serial = Serial::from_serial(tty_port).expect("Unable to wrap TTYPort.");
 

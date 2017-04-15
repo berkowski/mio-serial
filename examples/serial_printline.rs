@@ -25,9 +25,14 @@ pub fn main() {
     let mut rx = mio_serial::Serial::from_path(&tty_path, &settings).unwrap();
 
     // Disable exclusive mode
-    rx.set_exclusive(false).expect("Unable to set serial port into non-exclusive mode.");
+    rx.set_exclusive(false)
+        .expect("Unable to set serial port into non-exclusive mode.");
 
-    poll.register(&rx, SERIAL_TOKEN, Ready::readable() | UnixReady::hup() | UnixReady::error(), PollOpt::edge()).unwrap();
+    poll.register(&rx,
+                  SERIAL_TOKEN,
+                  Ready::readable() | UnixReady::hup() | UnixReady::error(),
+                  PollOpt::edge())
+        .unwrap();
 
     let mut rx_buf = [0u8; 1024];
 
@@ -51,14 +56,16 @@ pub fn main() {
                         match rx.read(&mut rx_buf) {
                             Ok(b) => {
                                 match b {
-                                    b if b > 0 => println!("{:?}", String::from_utf8_lossy(&rx_buf[..b])),
+                                    b if b > 0 => {
+                                        println!("{:?}", String::from_utf8_lossy(&rx_buf[..b]))
+                                    }
                                     _ => println!("Read would have blocked."),
                                 }
                             }
                             Err(e) => println!("Error:  {}", e),
                         }
                     }
-                },
+                }
                 t @ _ => unreachable!("Unexpected token: {:?}", t),
             }
         }
