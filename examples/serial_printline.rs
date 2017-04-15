@@ -3,7 +3,7 @@ extern crate mio;
 extern crate mio_serial;
 
 use mio::{Poll, PollOpt, Events, Token, Ready};
-use std::time::Duration;
+use mio::unix::UnixReady;
 use std::str;
 use std::io::Read;
 use std::env;
@@ -27,7 +27,7 @@ pub fn main() {
     // Disable exclusive mode
     rx.set_exclusive(false).expect("Unable to set serial port into non-exclusive mode.");
 
-    poll.register(&rx, SERIAL_TOKEN, Ready::readable() | Ready::hup() | Ready::error(), PollOpt::edge()).unwrap();
+    poll.register(&rx, SERIAL_TOKEN, Ready::readable() | UnixReady::hup() | UnixReady::error(), PollOpt::edge()).unwrap();
 
     let mut rx_buf = [0u8; 1024];
 
@@ -42,8 +42,8 @@ pub fn main() {
         for event in events.iter() {
             match event.token() {
                 SERIAL_TOKEN => {
-                    let ready = event.kind();
-                    if ready.contains(Ready::hup() | Ready::error()) {
+                    let ready = event.readiness();
+                    if ready.contains(UnixReady::hup() | UnixReady::error()) {
                         println!("Quitting due to event: {:?}", ready);
                         break 'outer;
                     }
