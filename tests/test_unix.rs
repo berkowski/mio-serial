@@ -57,7 +57,7 @@ fn test_serial_pair() {
     assert!(master.as_raw_fd() > 0,
             "Invalid file descriptor on master ptty");
     assert!(slave.as_raw_fd() > 0,
-            "Invalid file descriptor on slae ptty");
+            "Invalid file descriptor on slave ptty");
     assert!(master.as_raw_fd() != slave.as_raw_fd(),
             "master and slave ptty's share the same file descriptor.");
 

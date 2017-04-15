@@ -4,7 +4,7 @@ main() {
     curl https://sh.rustup.rs -sSf | \
         sh -s -- -y --default-toolchain $TRAVIS_RUST_VERSION
 
-    local cross_ver=v0.1.9
+    local cross_ver=v0.1.10
 
     local target=
     if [ $TRAVIS_OS_NAME = linux ]; then
