@@ -13,7 +13,7 @@ categories = ["asynchronous", "hardware-support"]
 
 [dependencies]
 mio = "0.6"
-serialport = {git = "https://gitlab.com/susurrus/serialport-rs"}
+serialport = "1.0"
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"
