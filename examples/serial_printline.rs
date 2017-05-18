@@ -13,7 +13,7 @@ const SERIAL_TOKEN: Token = Token(0);
 pub fn main() {
 
     let mut args = env::args();
-    let tty_path = args.nth(1).unwrap_or("/dev/ttyUSB0".into());
+    let tty_path = args.nth(1).unwrap_or_else(|| "/dev/ttyUSB0".into());
 
     let poll = Poll::new().unwrap();
     let mut events = Events::with_capacity(1024);
@@ -39,7 +39,7 @@ pub fn main() {
     'outer: loop {
         poll.poll(&mut events, None).unwrap();
 
-        if events.len() == 0 {
+        if events.is_empty() {
             println!("Read timed out!");
             continue;
         }
@@ -66,7 +66,7 @@ pub fn main() {
                         }
                     }
                 }
-                t @ _ => unreachable!("Unexpected token: {:?}", t),
+                t => unreachable!("Unexpected token: {:?}", t),
             }
         }
     }
