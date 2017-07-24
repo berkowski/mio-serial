@@ -13,11 +13,10 @@ categories = ["asynchronous", "hardware-support"]
 
 [dependencies]
 mio = "0.6"
-serialport = "1.0"
+serialport = { git = "https://gitlab.com/susurrus/serialport-rs" }
 
 [target.'cfg(unix)'.dependencies]
-libc = "0.2"
-termios = "0.2"
+nix = { git = "https://github.com/nix-rust/nix" }
 
 [[example]]
 name = "serial_printline"

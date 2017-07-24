@@ -5,7 +5,6 @@ use std::path::Path;
 use std::convert::AsRef;
 use std::time::Duration;
 
-use libc;
 use mio::{Evented, PollOpt, Token, Poll, Ready};
 use mio::unix::EventedFd;
 
@@ -13,7 +12,10 @@ use serialport;
 use serialport::posix::TTYPort;
 use serialport::prelude::*;
 
-use termios;
+use nix;
+use nix::libc;
+use nix::sys::termios;
+use nix::sys::termios::{SetArg, SpecialCharacterIndices};
 
 
 /// *nix serial port using termios
@@ -35,7 +37,7 @@ impl Serial {
     ///
     /// let serial = Serial::from_path(tty_name, &SerialPortSettings::default()).unwrap();
     /// ```
-    pub fn from_path<T: AsRef<Path>>(path: T, settings: &SerialPortSettings) -> io::Result<Self> {
+    pub fn from_path<T: AsRef<Path>>(path: T, settings: &SerialPortSettings) -> ::Result<Self> {
         let port = TTYPort::open(path.as_ref(), settings)?;
         Serial::from_serial(port)
     }
@@ -58,24 +60,24 @@ impl Serial {
     /// let serial = Serial::from_serial(blocking_serial).unwrap();
     /// # fn main() {}
     /// ```
-    pub fn from_serial(port: TTYPort) -> io::Result<Self> {
+    pub fn from_serial(port: TTYPort) -> ::Result<Self> {
 
         // Get the termios structure
-        let mut t = termios::Termios::from_fd(port.as_raw_fd())?;
+        let mut t = termios::tcgetattr(port.as_raw_fd())?;
 
         // Set VMIN = 1 to block until at least one character is received.
-        t.c_cc[termios::VMIN] = 1;
-        termios::tcsetattr(port.as_raw_fd(), termios::TCSANOW, &t)?;
+        t.control_chars[SpecialCharacterIndices::VMIN as usize] = 1;
+        termios::tcsetattr(port.as_raw_fd(), SetArg::TCSANOW, &t)?;
 
         // Set the O_NONBLOCK flag.
         let flags = unsafe { libc::fcntl(port.as_raw_fd(), libc::F_GETFL) };
         if flags < 0 {
-            return Err(io::Error::last_os_error());
+            return Err(io::Error::last_os_error().into());
         }
 
         match unsafe { libc::fcntl(port.as_raw_fd(), libc::F_SETFL, flags | libc::O_NONBLOCK) } {
             0 => Ok(Serial { inner: port }),
-            _ => Err(io::Error::last_os_error()),
+            _ => Err(io::Error::last_os_error().into()),
         }
 
     }
@@ -96,7 +98,7 @@ impl Serial {
     ///
     /// let (master, slave) = Serial::pair().unwrap();
     /// ```
-    pub fn pair() -> ::SerialResult<(Self, Self)> {
+    pub fn pair() -> ::Result<(Self, Self)> {
         let (master, slave) = TTYPort::pair()?;
 
         let master = Self::from_serial(master)?;
@@ -115,8 +117,8 @@ impl Serial {
     /// ## Errors
     ///
     /// * `Io` for any error while setting exclusivity for the port.
-    pub fn set_exclusive(&mut self, exclusive: bool) -> ::SerialResult<()> {
-        self.inner.set_exclusive(exclusive)
+    pub fn set_exclusive(&mut self, exclusive: bool) -> ::Result<()> {
+        self.inner.set_exclusive(exclusive).map_err(|e| e.into())
     }
 
     /// Returns the exclusivity of the port
@@ -359,7 +361,10 @@ impl Write for Serial {
     }
 
     fn flush(&mut self) -> io::Result<()> {
-        termios::tcdrain(self.inner.as_raw_fd())
+        termios::tcdrain(self.inner.as_raw_fd()).map_err(|e| {
+            let e : ::Error = e.into();
+            e.into()
+        })
         //self.inner.flush()
     }
 }
@@ -390,7 +395,10 @@ impl<'a> Write for &'a Serial {
     }
 
     fn flush(&mut self) -> io::Result<()> {
-        termios::tcdrain(self.inner.as_raw_fd())
+        termios::tcdrain(self.inner.as_raw_fd()).map_err(|e| {
+            let e : ::Error = e.into();
+            e.into()
+        })
     }
 }
 
