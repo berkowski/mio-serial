@@ -23,6 +23,7 @@ pub use serialport::{// Traits
                      SerialPort,
 
                      // Structs
+                     Error,
                      SerialPortInfo,
                      SerialPortSettings,
 
