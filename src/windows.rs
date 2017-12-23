@@ -7,7 +7,6 @@ use serialport::windows::COMport;
 
 pub fn from_path<T: AsRef<Path>>(path: T, settings: &::SerialPortSettings) -> io::Result<::Serial> {
 
-
 }
 
 use std::os::windows::prelude::*;
@@ -17,7 +16,7 @@ use std::convert::AsRef;
 use std::time::Duration;
 
 use libc;
-use mio::{Evented, PollOpt, Token, Poll, Ready};
+use mio::{Evented, Poll, PollOpt, Ready, Token};
 use mio::unix::EventedFd;
 
 use serialport;
@@ -240,10 +239,12 @@ impl SerialPort for Serial {
 impl Read for Serial {
     fn read(&mut self, bytes: &mut [u8]) -> io::Result<usize> {
         match unsafe {
-                  libc::read(self.as_raw_fd(),
-                             bytes.as_ptr() as *mut libc::c_void,
-                             bytes.len() as libc::size_t)
-              } {
+            libc::read(
+                self.as_raw_fd(),
+                bytes.as_ptr() as *mut libc::c_void,
+                bytes.len() as libc::size_t,
+            )
+        } {
             x if x >= 0 => Ok(x as usize),
             _ => Err(io::Error::last_os_error()),
         }
@@ -253,10 +254,12 @@ impl Read for Serial {
 impl Write for Serial {
     fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
         match unsafe {
-                  libc::write(self.as_raw_fd(),
-                              bytes.as_ptr() as *const libc::c_void,
-                              bytes.len() as libc::size_t)
-              } {
+            libc::write(
+                self.as_raw_fd(),
+                bytes.as_ptr() as *const libc::c_void,
+                bytes.len() as libc::size_t,
+            )
+        } {
             x if x >= 0 => Ok(x as usize),
             _ => Err(io::Error::last_os_error()),
         }
@@ -274,21 +277,23 @@ impl AsRawFd for Serial {
 }
 
 impl Evented for Serial {
-    fn register(&self,
-                poll: &Poll,
-                token: Token,
-                interest: Ready,
-                opts: PollOpt)
-                -> io::Result<()> {
+    fn register(
+        &self,
+        poll: &Poll,
+        token: Token,
+        interest: Ready,
+        opts: PollOpt,
+    ) -> io::Result<()> {
         EventedFd(&self.as_raw_fd()).register(poll, token, interest, opts)
     }
 
-    fn reregister(&self,
-                  poll: &Poll,
-                  token: Token,
-                  interest: Ready,
-                  opts: PollOpt)
-                  -> io::Result<()> {
+    fn reregister(
+        &self,
+        poll: &Poll,
+        token: Token,
+        interest: Ready,
+        opts: PollOpt,
+    ) -> io::Result<()> {
         EventedFd(&self.as_raw_fd()).reregister(poll, token, interest, opts)
     }
 

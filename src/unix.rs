@@ -5,7 +5,7 @@ use std::path::Path;
 use std::convert::AsRef;
 use std::time::Duration;
 
-use mio::{Evented, PollOpt, Token, Poll, Ready};
+use mio::{Evented, Poll, PollOpt, Ready, Token};
 use mio::unix::EventedFd;
 
 use serialport;
@@ -15,7 +15,6 @@ use serialport::prelude::*;
 use nix::libc;
 use nix::sys::termios;
 use nix::sys::termios::{SetArg, SpecialCharacterIndices};
-
 
 /// *nix serial port using termios
 pub struct Serial {
@@ -60,7 +59,6 @@ impl Serial {
     /// # fn main() {}
     /// ```
     pub fn from_serial(port: TTYPort) -> ::Result<Self> {
-
         // Get the termios structure
         let mut t = termios::tcgetattr(port.as_raw_fd())?;
 
@@ -78,7 +76,6 @@ impl Serial {
             0 => Ok(Serial { inner: port }),
             _ => Err(io::Error::last_os_error().into()),
         }
-
     }
 
     /// Create a pair of pseudo serial terminals
@@ -337,10 +334,12 @@ impl SerialPort for Serial {
 impl Read for Serial {
     fn read(&mut self, bytes: &mut [u8]) -> io::Result<usize> {
         match unsafe {
-                  libc::read(self.as_raw_fd(),
-                             bytes.as_ptr() as *mut libc::c_void,
-                             bytes.len() as libc::size_t)
-              } {
+            libc::read(
+                self.as_raw_fd(),
+                bytes.as_ptr() as *mut libc::c_void,
+                bytes.len() as libc::size_t,
+            )
+        } {
             x if x >= 0 => Ok(x as usize),
             _ => Err(io::Error::last_os_error()),
         }
@@ -350,10 +349,12 @@ impl Read for Serial {
 impl Write for Serial {
     fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
         match unsafe {
-                  libc::write(self.as_raw_fd(),
-                              bytes.as_ptr() as *const libc::c_void,
-                              bytes.len() as libc::size_t)
-              } {
+            libc::write(
+                self.as_raw_fd(),
+                bytes.as_ptr() as *const libc::c_void,
+                bytes.len() as libc::size_t,
+            )
+        } {
             x if x >= 0 => Ok(x as usize),
             _ => Err(io::Error::last_os_error()),
         }
@@ -361,7 +362,7 @@ impl Write for Serial {
 
     fn flush(&mut self) -> io::Result<()> {
         termios::tcdrain(self.inner.as_raw_fd()).map_err(|e| {
-            let e : ::Error = e.into();
+            let e: ::Error = e.into();
             e.into()
         })
         //self.inner.flush()
@@ -371,10 +372,12 @@ impl Write for Serial {
 impl<'a> Read for &'a Serial {
     fn read(&mut self, bytes: &mut [u8]) -> io::Result<usize> {
         match unsafe {
-                  libc::read(self.as_raw_fd(),
-                             bytes.as_ptr() as *mut libc::c_void,
-                             bytes.len() as libc::size_t)
-              } {
+            libc::read(
+                self.as_raw_fd(),
+                bytes.as_ptr() as *mut libc::c_void,
+                bytes.len() as libc::size_t,
+            )
+        } {
             x if x >= 0 => Ok(x as usize),
             _ => Err(io::Error::last_os_error()),
         }
@@ -384,10 +387,12 @@ impl<'a> Read for &'a Serial {
 impl<'a> Write for &'a Serial {
     fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
         match unsafe {
-                  libc::write(self.as_raw_fd(),
-                              bytes.as_ptr() as *const libc::c_void,
-                              bytes.len() as libc::size_t)
-              } {
+            libc::write(
+                self.as_raw_fd(),
+                bytes.as_ptr() as *const libc::c_void,
+                bytes.len() as libc::size_t,
+            )
+        } {
             x if x >= 0 => Ok(x as usize),
             _ => Err(io::Error::last_os_error()),
         }
@@ -395,12 +400,11 @@ impl<'a> Write for &'a Serial {
 
     fn flush(&mut self) -> io::Result<()> {
         termios::tcdrain(self.inner.as_raw_fd()).map_err(|e| {
-            let e : ::Error = e.into();
+            let e: ::Error = e.into();
             e.into()
         })
     }
 }
-
 
 impl AsRawFd for Serial {
     fn as_raw_fd(&self) -> RawFd {
@@ -414,7 +418,6 @@ impl IntoRawFd for Serial {
     }
 }
 
-
 impl FromRawFd for Serial {
     unsafe fn from_raw_fd(fd: RawFd) -> Self {
         let port = TTYPort::from_raw_fd(fd);
@@ -422,23 +425,24 @@ impl FromRawFd for Serial {
     }
 }
 
-
 impl Evented for Serial {
-    fn register(&self,
-                poll: &Poll,
-                token: Token,
-                interest: Ready,
-                opts: PollOpt)
-                -> io::Result<()> {
+    fn register(
+        &self,
+        poll: &Poll,
+        token: Token,
+        interest: Ready,
+        opts: PollOpt,
+    ) -> io::Result<()> {
         EventedFd(&self.as_raw_fd()).register(poll, token, interest, opts)
     }
 
-    fn reregister(&self,
-                  poll: &Poll,
-                  token: Token,
-                  interest: Ready,
-                  opts: PollOpt)
-                  -> io::Result<()> {
+    fn reregister(
+        &self,
+        poll: &Poll,
+        token: Token,
+        interest: Ready,
+        opts: PollOpt,
+    ) -> io::Result<()> {
         EventedFd(&self.as_raw_fd()).reregister(poll, token, interest, opts)
     }
 

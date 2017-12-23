@@ -2,7 +2,7 @@
 extern crate mio;
 extern crate mio_serial;
 
-use mio::{Poll, PollOpt, Events, Token, Ready};
+use mio::{Events, Poll, PollOpt, Ready, Token};
 use mio::unix::UnixReady;
 use std::io::Read;
 use std::env;
@@ -10,7 +10,6 @@ use std::env;
 const SERIAL_TOKEN: Token = Token(0);
 
 pub fn main() {
-
     let mut args = env::args();
     let tty_path = args.nth(1).unwrap_or_else(|| "/dev/ttyUSB0".into());
 
@@ -27,11 +26,12 @@ pub fn main() {
     rx.set_exclusive(false)
         .expect("Unable to set serial port into non-exclusive mode.");
 
-    poll.register(&rx,
-                  SERIAL_TOKEN,
-                  Ready::readable() | UnixReady::hup() | UnixReady::error(),
-                  PollOpt::edge())
-        .unwrap();
+    poll.register(
+        &rx,
+        SERIAL_TOKEN,
+        Ready::readable() | UnixReady::hup() | UnixReady::error(),
+        PollOpt::edge(),
+    ).unwrap();
 
     let mut rx_buf = [0u8; 1024];
 
@@ -53,14 +53,12 @@ pub fn main() {
                     }
                     if ready.is_readable() {
                         match rx.read(&mut rx_buf) {
-                            Ok(b) => {
-                                match b {
-                                    b if b > 0 => {
-                                        println!("{:?}", String::from_utf8_lossy(&rx_buf[..b]))
-                                    }
-                                    _ => println!("Read would have blocked."),
+                            Ok(b) => match b {
+                                b if b > 0 => {
+                                    println!("{:?}", String::from_utf8_lossy(&rx_buf[..b]))
                                 }
-                            }
+                                _ => println!("Read would have blocked."),
+                            },
                             Err(e) => println!("Error:  {}", e),
                         }
                     }
