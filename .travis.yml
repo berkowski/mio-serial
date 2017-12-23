@@ -109,6 +109,7 @@ branches:
     - /^v\d+\.\d+\.\d+.*$/
     - master
     - nix-testing
+    - serialport-2
 
 notifications:
   email:
