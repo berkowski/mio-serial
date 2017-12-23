@@ -4,7 +4,6 @@ extern crate mio_serial;
 
 use mio::{Poll, PollOpt, Events, Token, Ready};
 use mio::unix::UnixReady;
-use std::str;
 use std::io::Read;
 use std::env;
 

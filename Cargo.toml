@@ -1,6 +1,6 @@
 [package]
 name = "mio-serial"
-version = "0.6.0"
+version = "0.7.0"
 authors = ["Zac Berkowitz <zac.berkowitz@gmail.com>"]
 description = "A serial port implementation for mio"
 license = "MIT"
@@ -13,10 +13,10 @@ categories = ["asynchronous", "hardware-support"]
 
 [dependencies]
 mio = "0.6"
-serialport = { git = "https://gitlab.com/susurrus/serialport-rs" }
+serialport = "2.0"
 
 [target.'cfg(unix)'.dependencies]
-nix = { git = "https://github.com/nix-rust/nix" }
+nix = "^0.9"
 
 [[example]]
 name = "serial_printline"

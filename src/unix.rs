@@ -12,7 +12,6 @@ use serialport;
 use serialport::posix::TTYPort;
 use serialport::prelude::*;
 
-use nix;
 use nix::libc;
 use nix::sys::termios;
 use nix::sys::termios::{SetArg, SpecialCharacterIndices};
@@ -118,7 +117,7 @@ impl Serial {
     ///
     /// * `Io` for any error while setting exclusivity for the port.
     pub fn set_exclusive(&mut self, exclusive: bool) -> ::Result<()> {
-        self.inner.set_exclusive(exclusive).map_err(|e| e.into())
+        self.inner.set_exclusive(exclusive).map_err(|e| e)
     }
 
     /// Returns the exclusivity of the port
