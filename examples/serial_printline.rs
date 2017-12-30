@@ -2,16 +2,42 @@
 extern crate mio;
 extern crate mio_serial;
 
-use mio::{Events, Poll, PollOpt, Ready, Token};
+use mio::{Poll, PollOpt, Events, Token, Ready};
+#[cfg(unix)]
 use mio::unix::UnixReady;
+use std::str;
 use std::io::Read;
 use std::env;
 
 const SERIAL_TOKEN: Token = Token(0);
 
+#[cfg(unix)]
+const DEFAULT_TTY: &str = "/dev/ttyUSB0";
+#[cfg(windows)]
+const DEFAULT_TTY: &str = "COM1";
+
+#[cfg(unix)]
+fn ready_of_interest() -> Ready {
+    Ready::readable() | UnixReady::hup() | UnixReady::error()
+}
+#[cfg(windows)]
+fn ready_of_interest() -> Ready {
+    Ready::readable()
+}
+
+#[cfg(unix)]
+fn is_closed(state: Ready) -> bool {
+    state.contains(UnixReady::hup() | UnixReady::error())
+}
+#[cfg(windows)]
+fn is_closed(state: Ready) -> bool {
+    false
+}
+
 pub fn main() {
+
     let mut args = env::args();
-    let tty_path = args.nth(1).unwrap_or_else(|| "/dev/ttyUSB0".into());
+    let tty_path = args.nth(1).unwrap_or_else(|| DEFAULT_TTY.into());
 
     let poll = Poll::new().unwrap();
     let mut events = Events::with_capacity(1024);
@@ -22,16 +48,11 @@ pub fn main() {
     println!("Opening {} at 9600,8N1", tty_path);
     let mut rx = mio_serial::Serial::from_path(&tty_path, &settings).unwrap();
 
-    // Disable exclusive mode
-    rx.set_exclusive(false)
-        .expect("Unable to set serial port into non-exclusive mode.");
-
-    poll.register(
-        &rx,
-        SERIAL_TOKEN,
-        Ready::readable() | UnixReady::hup() | UnixReady::error(),
-        PollOpt::edge(),
-    ).unwrap();
+    poll.register(&rx,
+                  SERIAL_TOKEN,
+                  ready_of_interest(),
+                  PollOpt::edge())
+        .unwrap();
 
     let mut rx_buf = [0u8; 1024];
 
@@ -47,18 +68,20 @@ pub fn main() {
             match event.token() {
                 SERIAL_TOKEN => {
                     let ready = event.readiness();
-                    if ready.contains(UnixReady::hup() | UnixReady::error()) {
+                    if is_closed(ready) {
                         println!("Quitting due to event: {:?}", ready);
                         break 'outer;
                     }
                     if ready.is_readable() {
                         match rx.read(&mut rx_buf) {
-                            Ok(b) => match b {
-                                b if b > 0 => {
-                                    println!("{:?}", String::from_utf8_lossy(&rx_buf[..b]))
+                            Ok(b) => {
+                                match b {
+                                    b if b > 0 => {
+                                        println!("{:?}", String::from_utf8_lossy(&rx_buf[..b]))
+                                    }
+                                    _ => println!("Read would have blocked."),
                                 }
-                                _ => println!("Read would have blocked."),
-                            },
+                            }
                             Err(e) => println!("Error:  {}", e),
                         }
                     }

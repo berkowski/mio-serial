@@ -18,6 +18,10 @@ serialport = "2.1"
 [target.'cfg(unix)'.dependencies]
 nix = "0.10"
 
+[target.'cfg(windows)'.dependencies]
+winapi = { version = "0.3", features = ["commapi", "handleapi", "winbase"] }
+mio-named-pipes = "0.1.5"
+
 [[example]]
 name = "serial_printline"
 path = "examples/serial_printline.rs"
