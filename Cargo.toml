@@ -13,10 +13,10 @@ categories = ["asynchronous", "hardware-support"]
 
 [dependencies]
 mio = "0.6"
-serialport = "2.0"
+serialport = "2.1"
 
 [target.'cfg(unix)'.dependencies]
-nix = "^0.9"
+nix = "0.10"
 
 [[example]]
 name = "serial_printline"
