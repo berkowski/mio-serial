@@ -9,6 +9,10 @@ and this project adheres to http://semver.org/[Semantic Versioning].
 ==== Changed
 * Bumped [serialport-rs](https://gitlab.com/susurrus/serialport-rs) to 2.0
 
+==== Added
+* Merged[#4](https://github.com/berkowski/mio-serial/pull/4) @ndusart added windows support!
+* Added appveyor config to support new windows impl.
+
 === [0.6.0] - 2017-11-28
 ==== Added
 * Closed [#3](https://github.com/berkowski/mio-serial/pull/3) Reexport serialport::Error for error handling without importing serialport crate.
