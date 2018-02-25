@@ -4,9 +4,7 @@
 [![crates.io](http://meritbadge.herokuapp.com/mio-serial)](https://crates.io/crates/mio-serial)
 [![docs.rs](https://docs.rs/mio-serial/badge.svg)](https://docs.rs/mio-serial)
 
-mio-serial provides a serial port implementation for [mio](https://github.com/carllerche/mio).  
-
-**Note:** At the moment this is unix (termios) only.  No windows COM port yet.
+mio-serial provides a serial port implementation using [mio](https://github.com/carllerche/mio).
 
 ## Usage
 
@@ -14,7 +12,7 @@ Add `mio-serial` to you `Cargo.toml`:
 
 ```toml
 [dependencies]
-mio-serial = "0.6"
+mio-serial = "0.7"
 ```
 
 Then add this to your crate root:
