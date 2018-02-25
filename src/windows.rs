@@ -1,45 +1,76 @@
-use std::os::windows::prelude::*;
-use std::io;
-use std::path::Path;
-use std::convert::AsRef;
-
-use serialport::windows::COMport;
-
-pub fn from_path<T: AsRef<Path>>(path: T, settings: &::SerialPortSettings) -> io::Result<::Serial> {
-
-}
-
-use std::os::windows::prelude::*;
+//! Windows impl of mio-enabled serial ports.
 use std::io::{self, Read, Write};
+use std::mem;
 use std::path::Path;
-use std::convert::AsRef;
+use std::ptr;
+use std::ffi::OsStr;
 use std::time::Duration;
-
-use libc;
-use mio::{Evented, Poll, PollOpt, Ready, Token};
-use mio::unix::EventedFd;
-
-use serialport;
+use std::os::windows::ffi::OsStrExt;
+use std::os::windows::io::FromRawHandle;
+use winapi::um::fileapi::*;
+use winapi::um::winbase::FILE_FLAG_OVERLAPPED;
+use winapi::um::handleapi::INVALID_HANDLE_VALUE;
+use winapi::um::winnt::{FILE_ATTRIBUTE_NORMAL, GENERIC_READ, GENERIC_WRITE, HANDLE};
+use serialport::{self, SerialPort, SerialPortSettings};
 use serialport::windows::COMPort;
-use serialport::prelude::*;
+use mio::{Evented, Poll, PollOpt, Ready, Token};
+use mio_named_pipes::NamedPipe;
 
+
+/// Windows serial port
 pub struct Serial {
-    inner: serialport::windows::COMPort,
+    inner: COMPort,
+    pipe: NamedPipe,
 }
 
 impl Serial {
+    /// Opens a COM port at the specified path
     pub fn from_path<T: AsRef<Path>>(path: T, settings: &SerialPortSettings) -> io::Result<Self> {
-        COMPort
-            .open(path.as_ref(), settings)
-            .map(|port| ::Serial { inner: port })
-            .map_err(|_| Err(io::Error::last_os_error))
+        let mut name = Vec::<u16>::new();
+
+        name.extend(OsStr::new("\\\\.\\").encode_wide());
+        name.extend(path.as_ref().as_os_str().encode_wide());
+        name.push(0);
+
+        let handle = unsafe {
+            CreateFileW(name.as_ptr(),
+                        GENERIC_READ | GENERIC_WRITE,
+                        0,
+                        ptr::null_mut(),
+                        OPEN_EXISTING,
+                        FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED,
+                        0 as HANDLE)
+        };
+
+        if handle != INVALID_HANDLE_VALUE {
+            let handle = unsafe { mem::transmute(handle) };
+
+            // Construct NamedPipe and COMPort from Handle
+            let pipe = unsafe { NamedPipe::from_raw_handle(handle) };
+            let mut serial = unsafe { COMPort::from_raw_handle(handle) };
+            serial.set_all(settings)?;
+
+            Ok(Serial{
+                inner: serial,
+                pipe: pipe
+            })
+        } else {
+            Err(io::Error::last_os_error())
+        }
+
     }
+
 }
 
 impl SerialPort for Serial {
     /// Returns a struct with the current port settings
     fn settings(&self) -> SerialPortSettings {
         self.inner.settings()
+    }
+
+    /// Return the name associated with the serial port, if known.
+    fn port_name(&self) -> Option<String> {
+        self.inner.port_name()
     }
 
     /// Returns the current baud rate.
@@ -238,41 +269,17 @@ impl SerialPort for Serial {
 
 impl Read for Serial {
     fn read(&mut self, bytes: &mut [u8]) -> io::Result<usize> {
-        match unsafe {
-            libc::read(
-                self.as_raw_fd(),
-                bytes.as_ptr() as *mut libc::c_void,
-                bytes.len() as libc::size_t,
-            )
-        } {
-            x if x >= 0 => Ok(x as usize),
-            _ => Err(io::Error::last_os_error()),
-        }
+        self.pipe.read(bytes)
     }
 }
 
 impl Write for Serial {
     fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
-        match unsafe {
-            libc::write(
-                self.as_raw_fd(),
-                bytes.as_ptr() as *const libc::c_void,
-                bytes.len() as libc::size_t,
-            )
-        } {
-            x if x >= 0 => Ok(x as usize),
-            _ => Err(io::Error::last_os_error()),
-        }
+        self.pipe.write(bytes)
     }
 
     fn flush(&mut self) -> io::Result<()> {
-        self.inner.flush()
-    }
-}
-
-impl AsRawFd for Serial {
-    fn as_raw_fd(&self) -> RawFd {
-        self.inner.as_raw_fd()
+        self.pipe.flush()
     }
 }
 
@@ -284,7 +291,7 @@ impl Evented for Serial {
         interest: Ready,
         opts: PollOpt,
     ) -> io::Result<()> {
-        EventedFd(&self.as_raw_fd()).register(poll, token, interest, opts)
+        self.pipe.register(poll, token, interest, opts)
     }
 
     fn reregister(
@@ -294,10 +301,10 @@ impl Evented for Serial {
         interest: Ready,
         opts: PollOpt,
     ) -> io::Result<()> {
-        EventedFd(&self.as_raw_fd()).reregister(poll, token, interest, opts)
+        self.pipe.reregister(poll, token, interest, opts)
     }
 
     fn deregister(&self, poll: &Poll) -> io::Result<()> {
-        EventedFd(&self.as_raw_fd()).deregister(poll)
+        self.pipe.deregister(poll)
     }
 }
