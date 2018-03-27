@@ -329,6 +329,24 @@ impl SerialPort for Serial {
     fn read_carrier_detect(&mut self) -> serialport::Result<bool> {
         self.inner.read_carrier_detect()
     }
+
+    // Misc methods
+
+    /// Attempts to clone the `SerialPort`. This allow you to write and read simultaneously from the
+    /// same serial connection. Please note that if you want a real asynchronous serial port you
+    /// should look at [mio-serial](https://crates.io/crates/mio-serial) or
+    /// [tokio-serial](https://crates.io/crates/tokio-serial).
+    ///
+    /// Also, you must be very carefull when changing the settings of a cloned `SerialPort` : since
+    /// the settings are cached on a per object basis, trying to modify them from two different
+    /// objects can cause some nasty behavior.
+    ///
+    /// # Errors
+    ///
+    /// This function returns an error if the serial port couldn't be cloned.
+    fn try_clone(&self) -> serialport::Result<Box<SerialPort>> {
+        self.inner.try_clone()
+    }
 }
 
 impl Read for Serial {
