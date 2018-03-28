@@ -329,6 +329,10 @@ impl SerialPort for Serial {
     fn read_carrier_detect(&mut self) -> serialport::Result<bool> {
         self.inner.read_carrier_detect()
     }
+
+    fn try_clone(&self) -> ::Result<Box<SerialPort>> {
+        panic!("try_clone() is not supported");
+    }
 }
 
 impl Read for Serial {
