@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on http://keepachangelog.com/[Keep a Changelog]
 and this project adheres to http://semver.org/[Semantic Versioning].
 
+=== [0.8.0] - 2018-03-31
+==== Changed
+* Bumped [serialport-rs](https://gitlab.com/susurrus/serialport-rs) to 2.3
+
+==== Added
+* Merged[#5](https://github.com/berkowski/mio-serial/pull/5) @ndusart added `try_clone` implementations as requred
+  by the serialport trait as of 2.3
+* Closed[#6](https://github.com/berkowski/mio-serial/pull/6) @snorp also drew attention to the `try_clone` addition
+
 === [0.7.0] - 2018-02-25
 ==== Changed
 * Bumped [serialport-rs](https://gitlab.com/susurrus/serialport-rs) to 2.1
