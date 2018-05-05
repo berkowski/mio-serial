@@ -7,31 +7,31 @@ and this project adheres to http://semver.org/[Semantic Versioning].
 
 === [0.8.0] - 2018-03-31
 ==== Changed
-* Bumped [serialport-rs](https://gitlab.com/susurrus/serialport-rs) to 2.3
+* Bumped https://gitlab.com/susurrus/serialport-rs[serialport-rs] to 2.3
 
 ==== Added
-* Merged[#5](https://github.com/berkowski/mio-serial/pull/5) @ndusart added `try_clone` implementations as requred
+* Merged https://github.com/berkowski/mio-serial/pull/5[#5]: https://github.com/ndusart[ndusart] added `try_clone` implementations as requred
   by the serialport trait as of 2.3
-* Closed[#6](https://github.com/berkowski/mio-serial/pull/6) @snorp also drew attention to the `try_clone` addition
+* Closed https://github.com/berkowski/mio-serial/pull/6[#6]: https://github.com/snorp[snorp] also drew attention to the `try_clone` addition
 
 === [0.7.0] - 2018-02-25
 ==== Changed
-* Bumped [serialport-rs](https://gitlab.com/susurrus/serialport-rs) to 2.1
+* Bumped https://gitlab.com/susurrus/serialport-rs[serialport-rs] to 2.1
 
 ==== Added
-* Merged[#4](https://github.com/berkowski/mio-serial/pull/4) @ndusart added windows support!
-* Added appveyor config to support new windows impl.
+* Merged https://github.com/berkowski/mio-serial/pull/4[#4]: https://github.com/ndusart[ndusart] added Windows support!
+* Added AppVeyor config to support new Windows impl.
 
 === [0.6.0] - 2017-11-28
 ==== Added
-* Closed [#3](https://github.com/berkowski/mio-serial/pull/3) Reexport serialport::Error for error handling without importing serialport crate.
-  Thanks @Idanko
+* Closed https://github.com/berkowski/mio-serial/pull/3[#3]: Reexport `serialport::Error` for error handling without importing `serialport` crate.
+  Thanks https://github.com/idanko[idanko]
 
 === [0.5.0] - 2017-04-15
 ==== Added
-* Added [trust](https://github.com/japaric/trust) based ci
+* Added https://github.com/japaric/trust[trust] based CI
 
-==== Changed 
+==== Changed
 * Changed license back to MIT now that `serialport-rs` is MPL-2.0
 * Bumped `serialport-rs` dependency to 1.0
 
