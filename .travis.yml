@@ -108,6 +108,7 @@ branches:
     # release tags
     - /^v\d+\.\d+\.\d+.*$/
     - master
+    - serialport-master
 
 notifications:
   email:
