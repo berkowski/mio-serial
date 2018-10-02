@@ -20,8 +20,7 @@ extern crate winapi;
 extern crate mio_named_pipes;
 
 // Enums, Structs, and Traits from the serialport crate
-pub use serialport::{BaudRate,
-                     // Enums
+pub use serialport::{ // Enums
                      DataBits,
                      // Structs
                      Error,

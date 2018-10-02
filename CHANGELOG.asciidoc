@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on http://keepachangelog.com/[Keep a Changelog]
 and this project adheres to http://semver.org/[Semantic Versioning].
 
+=== [3.0.0] - UNRELEASED
+==== Changed
+* Bumped [serialport-rs](https://gitlab.com/susurrus/serialport-rs) to 3.0
+  serialport-rs 3.0 contains breaking changes.
+* `mio-serial` version number will now track upstream serialport-rs.  mio-serial
+  is mostly feature complete at this point (at least for *nix) and this should
+  help reduce confusion.
+
 === [0.8.0] - 2018-03-31
 ==== Changed
 * Bumped [serialport-rs](https://gitlab.com/susurrus/serialport-rs) to 2.3
