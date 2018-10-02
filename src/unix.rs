@@ -12,6 +12,7 @@ use serialport;
 use serialport::posix::TTYPort;
 use serialport::prelude::*;
 
+use nix::Error as nixError;
 use nix::libc;
 use nix::sys::termios;
 use nix::sys::termios::{SetArg, SpecialCharacterIndices};
@@ -21,8 +22,8 @@ pub struct Serial {
     inner: TTYPort,
 }
 
-fn map_nix_error(e: nix::Error) -> ::Error {
-    ::Error{kind: ::ErrorKind::Io(std::io::ErrorKind::Other), description: e.to_string()}
+fn map_nix_error(e: nixError) -> ::Error {
+    ::Error{kind: ::ErrorKind::Io(io::ErrorKind::Other), description: e.to_string()}
 }
 
 impl Serial {
