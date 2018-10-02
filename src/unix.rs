@@ -21,6 +21,10 @@ pub struct Serial {
     inner: TTYPort,
 }
 
+fn map_nix_error(e: nix::Error) -> ::Error {
+    ::Error{kind: ::ErrorKind::Io(std::io::ErrorKind::Other), description: e.to_string()}
+}
+
 impl Serial {
     /// Open a nonblocking serial port from the provided path.
     ///
@@ -60,11 +64,11 @@ impl Serial {
     /// ```
     pub fn from_serial(port: TTYPort) -> ::Result<Self> {
         // Get the termios structure
-        let mut t = termios::tcgetattr(port.as_raw_fd())?;
+        let mut t = termios::tcgetattr(port.as_raw_fd()).map_err(map_nix_error)?;
 
         // Set VMIN = 1 to block until at least one character is received.
         t.control_chars[SpecialCharacterIndices::VMIN as usize] = 1;
-        termios::tcsetattr(port.as_raw_fd(), SetArg::TCSANOW, &t)?;
+        termios::tcsetattr(port.as_raw_fd(), SetArg::TCSANOW, &t).map_err(map_nix_error)?;
 
         // Set the O_NONBLOCK flag.
         let flags = unsafe { libc::fcntl(port.as_raw_fd(), libc::F_GETFL) };
@@ -380,8 +384,7 @@ impl Write for Serial {
 
     fn flush(&mut self) -> io::Result<()> {
         termios::tcdrain(self.inner.as_raw_fd()).map_err(|e| {
-            let e: ::Error = e.into();
-            e.into()
+            io::Error::new(io::ErrorKind::Other,  e.to_string())
         })
         //self.inner.flush()
     }
@@ -418,9 +421,8 @@ impl<'a> Write for &'a Serial {
 
     fn flush(&mut self) -> io::Result<()> {
         termios::tcdrain(self.inner.as_raw_fd()).map_err(|e| {
-            let e: ::Error = e.into();
-            e.into()
-        })
+            io::Error::new(io::ErrorKind::Other,  e.to_string())
+       })
     }
 }
 

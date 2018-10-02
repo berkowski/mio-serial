@@ -9,6 +9,7 @@ and this project adheres to http://semver.org/[Semantic Versioning].
 ==== Changed
 * Bumped [serialport-rs](https://gitlab.com/susurrus/serialport-rs) to 3.0
   serialport-rs 3.0 contains breaking changes.
+* Bumped [nix](https://github.com/nix-rust/nix) to 0.11
 * `mio-serial` version number will now track upstream serialport-rs.  mio-serial
   is mostly feature complete at this point (at least for *nix) and this should
   help reduce confusion.
