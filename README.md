@@ -12,7 +12,7 @@ Add `mio-serial` to you `Cargo.toml`:
 
 ```toml
 [dependencies]
-mio-serial = "0.8"
+mio-serial = "3.0"
 ```
 
 Then add this to your crate root:
