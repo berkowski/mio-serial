@@ -1,22 +1,21 @@
 //! Windows impl of mio-enabled serial ports.
-use std::io::{self, Read, Write};
-use std::mem;
-use std::path::Path;
-use std::ptr;
-use std::ffi::OsStr;
-use std::time::Duration;
-use std::os::windows::ffi::OsStrExt;
-use std::os::windows::io::{AsRawHandle, FromRawHandle, RawHandle};
-use winapi::um::commapi::SetCommTimeouts;
-use winapi::um::fileapi::*;
-use winapi::um::winbase::{COMMTIMEOUTS, FILE_FLAG_OVERLAPPED};
-use winapi::um::handleapi::INVALID_HANDLE_VALUE;
-use winapi::um::winnt::{FILE_ATTRIBUTE_NORMAL, GENERIC_READ, GENERIC_WRITE, HANDLE};
-use serialport::{self, SerialPort, SerialPortSettings};
-use serialport::windows::COMPort;
 use mio::{Evented, Poll, PollOpt, Ready, Token};
 use mio_named_pipes::NamedPipe;
-
+use serialport::windows::COMPort;
+use serialport::{self, SerialPort, SerialPortSettings};
+use std::ffi::OsStr;
+use std::io::{self, Read, Write};
+use std::mem;
+use std::os::windows::ffi::OsStrExt;
+use std::os::windows::io::{AsRawHandle, FromRawHandle, RawHandle};
+use std::path::Path;
+use std::ptr;
+use std::time::Duration;
+use winapi::um::commapi::SetCommTimeouts;
+use winapi::um::fileapi::*;
+use winapi::um::handleapi::INVALID_HANDLE_VALUE;
+use winapi::um::winbase::{COMMTIMEOUTS, FILE_FLAG_OVERLAPPED};
+use winapi::um::winnt::{FILE_ATTRIBUTE_NORMAL, GENERIC_READ, GENERIC_WRITE, HANDLE};
 
 /// Windows serial port
 pub struct Serial {
@@ -34,13 +33,15 @@ impl Serial {
         name.push(0);
 
         let handle = unsafe {
-            CreateFileW(name.as_ptr(),
-                        GENERIC_READ | GENERIC_WRITE,
-                        0,
-                        ptr::null_mut(),
-                        OPEN_EXISTING,
-                        FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED,
-                        0 as HANDLE)
+            CreateFileW(
+                name.as_ptr(),
+                GENERIC_READ | GENERIC_WRITE,
+                0,
+                ptr::null_mut(),
+                OPEN_EXISTING,
+                FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED,
+                0 as HANDLE,
+            )
         };
 
         if handle != INVALID_HANDLE_VALUE {
@@ -52,16 +53,14 @@ impl Serial {
             serial.set_all(settings)?;
             override_comm_timeouts(handle)?;
 
-            Ok(Serial{
+            Ok(Serial {
                 inner: serial,
-                pipe: pipe
+                pipe: pipe,
             })
         } else {
             Err(io::Error::last_os_error())
         }
-
     }
-
 }
 
 impl SerialPort for Serial {

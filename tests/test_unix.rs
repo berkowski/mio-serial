@@ -4,10 +4,10 @@
 extern crate mio_serial;
 extern crate serialport;
 
-use std::os::unix::prelude::*;
 use std::io::{Read, Write};
-use std::str;
+use std::os::unix::prelude::*;
 use std::path::Path;
+use std::str;
 
 use mio_serial::unix::Serial;
 

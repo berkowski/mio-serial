@@ -14,6 +14,10 @@ and this project adheres to http://semver.org/[Semantic Versioning].
   is mostly feature complete at this point (at least for *nix) and this should
   help reduce confusion.
 
+==== Fixed
+* Merged [#10](https://github.com/berkowski/mio-serial/pull/10) (thanks @yuja!).  Addresses some
+  windows timeout settings.
+
 === [0.8.0] - 2018-03-31
 ==== Changed
 * Bumped [serialport-rs](https://gitlab.com/susurrus/serialport-rs) to 2.3

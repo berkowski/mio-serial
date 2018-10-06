@@ -1,21 +1,21 @@
 //! Unix impl of mio-enabled serial ports.
-use std::os::unix::prelude::*;
-use std::io::{self, Read, Write};
-use std::path::Path;
 use std::convert::AsRef;
+use std::io::{self, Read, Write};
+use std::os::unix::prelude::*;
+use std::path::Path;
 use std::time::Duration;
 
-use mio::{Evented, Poll, PollOpt, Ready, Token};
 use mio::unix::EventedFd;
+use mio::{Evented, Poll, PollOpt, Ready, Token};
 
 use serialport;
 use serialport::posix::TTYPort;
 use serialport::prelude::*;
 
-use nix::Error as nixError;
 use nix::libc;
 use nix::sys::termios;
 use nix::sys::termios::{SetArg, SpecialCharacterIndices};
+use nix::Error as nixError;
 
 /// *nix serial port using termios
 pub struct Serial {
@@ -23,7 +23,10 @@ pub struct Serial {
 }
 
 fn map_nix_error(e: nixError) -> ::Error {
-    ::Error{kind: ::ErrorKind::Io(io::ErrorKind::Other), description: e.to_string()}
+    ::Error {
+        kind: ::ErrorKind::Io(io::ErrorKind::Other),
+        description: e.to_string(),
+    }
 }
 
 impl Serial {
@@ -384,9 +387,8 @@ impl Write for Serial {
     }
 
     fn flush(&mut self) -> io::Result<()> {
-        termios::tcdrain(self.inner.as_raw_fd()).map_err(|e| {
-            io::Error::new(io::ErrorKind::Other,  e.to_string())
-        })
+        termios::tcdrain(self.inner.as_raw_fd())
+            .map_err(|e| io::Error::new(io::ErrorKind::Other, e.to_string()))
         //self.inner.flush()
     }
 }
@@ -421,9 +423,8 @@ impl<'a> Write for &'a Serial {
     }
 
     fn flush(&mut self) -> io::Result<()> {
-        termios::tcdrain(self.inner.as_raw_fd()).map_err(|e| {
-            io::Error::new(io::ErrorKind::Other,  e.to_string())
-       })
+        termios::tcdrain(self.inner.as_raw_fd())
+            .map_err(|e| io::Error::new(io::ErrorKind::Other, e.to_string()))
     }
 }
 
