@@ -6,9 +6,10 @@ use std::ptr;
 use std::ffi::OsStr;
 use std::time::Duration;
 use std::os::windows::ffi::OsStrExt;
-use std::os::windows::io::FromRawHandle;
+use std::os::windows::io::{AsRawHandle, FromRawHandle, RawHandle};
+use winapi::um::commapi::SetCommTimeouts;
 use winapi::um::fileapi::*;
-use winapi::um::winbase::FILE_FLAG_OVERLAPPED;
+use winapi::um::winbase::{COMMTIMEOUTS, FILE_FLAG_OVERLAPPED};
 use winapi::um::handleapi::INVALID_HANDLE_VALUE;
 use winapi::um::winnt::{FILE_ATTRIBUTE_NORMAL, GENERIC_READ, GENERIC_WRITE, HANDLE};
 use serialport::{self, SerialPort, SerialPortSettings};
@@ -49,6 +50,7 @@ impl Serial {
             let pipe = unsafe { NamedPipe::from_raw_handle(handle) };
             let mut serial = unsafe { COMPort::from_raw_handle(handle) };
             serial.set_all(settings)?;
+            override_comm_timeouts(handle)?;
 
             Ok(Serial{
                 inner: serial,
@@ -132,7 +134,9 @@ impl SerialPort for Serial {
     /// a single call into the driver, though that may be done on some
     /// platforms.
     fn set_all(&mut self, settings: &SerialPortSettings) -> serialport::Result<()> {
-        self.inner.set_all(settings)
+        self.inner.set_all(settings)?;
+        override_comm_timeouts(self.inner.as_raw_handle())?;
+        Ok(())
     }
 
     /// Sets the baud rate.
@@ -325,4 +329,25 @@ impl Evented for Serial {
     fn deregister(&self, poll: &Poll) -> io::Result<()> {
         self.pipe.deregister(poll)
     }
+}
+
+/// Overrides timeout value set by serialport-rs so that the read end will
+/// never wake up with 0-byte payload.
+fn override_comm_timeouts(handle: RawHandle) -> io::Result<()> {
+    let mut timeouts = COMMTIMEOUTS {
+        // wait at most 1ms between two bytes (0 means no timeout)
+        ReadIntervalTimeout: 1,
+        // disable "total" timeout to wait at least 1 byte forever
+        ReadTotalTimeoutMultiplier: 0,
+        ReadTotalTimeoutConstant: 0,
+        // write timeouts are just copied from serialport-rs
+        WriteTotalTimeoutMultiplier: 0,
+        WriteTotalTimeoutConstant: 0,
+    };
+
+    let r = unsafe { SetCommTimeouts(handle, &mut timeouts) };
+    if r == 0 {
+        return Err(io::Error::last_os_error());
+    }
+    Ok(())
 }
