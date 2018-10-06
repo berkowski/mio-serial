@@ -12,28 +12,30 @@
 extern crate mio;
 extern crate serialport;
 
+#[cfg(windows)]
+extern crate mio_named_pipes;
 #[cfg(unix)]
 extern crate nix;
 #[cfg(windows)]
 extern crate winapi;
-#[cfg(windows)]
-extern crate mio_named_pipes;
 
 // Enums, Structs, and Traits from the serialport crate
-pub use serialport::{ // Enums
-                     DataBits,
-                     // Structs
-                     Error,
-                     ErrorKind,
-                     FlowControl,
-                     Parity,
-                     // Traits
-                     SerialPort,
+pub use serialport::{
+    // Enums
+    DataBits,
+    // Structs
+    Error,
+    ErrorKind,
+    FlowControl,
+    Parity,
+    // Traits
+    SerialPort,
 
-                     SerialPortInfo,
-                     SerialPortSettings,
+    SerialPortInfo,
+    SerialPortSettings,
 
-                     StopBits};
+    StopBits,
+};
 
 // Re-export port-enumerating utility function.
 pub use serialport::available_ports;
