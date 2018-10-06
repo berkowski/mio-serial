@@ -11,17 +11,15 @@ use mio::{Evented, Poll, PollOpt, Ready, Token};
 use serialport::posix::TTYPort;
 use serialport::prelude::*;
 
-use nix::libc;
-use nix::sys::termios;
-use nix::sys::termios::{SetArg, SpecialCharacterIndices};
-use nix::Error as nixError;
+use nix::{self, libc};
+use nix::sys::termios::{self, SetArg, SpecialCharacterIndices};
 
 /// *nix serial port using termios
 pub struct Serial {
     inner: TTYPort,
 }
 
-fn map_nix_error(e: nixError) -> ::Error {
+fn map_nix_error(e: nix::Error) -> ::Error {
     ::Error {
         kind: ::ErrorKind::Io(io::ErrorKind::Other),
         description: e.to_string(),
