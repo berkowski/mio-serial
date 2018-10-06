@@ -8,21 +8,18 @@ use std::time::Duration;
 use mio::{Evented, Poll, PollOpt, Ready, Token};
 use mio::unix::EventedFd;
 
-use serialport;
 use serialport::posix::TTYPort;
 use serialport::prelude::*;
 
-use nix::Error as nixError;
-use nix::libc;
-use nix::sys::termios;
-use nix::sys::termios::{SetArg, SpecialCharacterIndices};
+use nix::{self, libc};
+use nix::sys::termios::{self, SetArg, SpecialCharacterIndices};
 
 /// *nix serial port using termios
 pub struct Serial {
     inner: TTYPort,
 }
 
-fn map_nix_error(e: nixError) -> ::Error {
+fn map_nix_error(e: nix::Error) -> ::Error {
     ::Error{kind: ::ErrorKind::Io(io::ErrorKind::Other), description: e.to_string()}
 }
 
@@ -190,7 +187,8 @@ impl SerialPort for Serial {
         self.inner.stop_bits()
     }
 
-    /// Returns the current timeout.
+    /// Returns the current timeout. This parameter is const and equal to zero and implemented due
+    /// to required for trait completeness.
     fn timeout(&self) -> Duration {
         Duration::from_secs(0)
     }
@@ -200,7 +198,7 @@ impl SerialPort for Serial {
     /// Applies all settings for a struct. This isn't guaranteed to involve only
     /// a single call into the driver, though that may be done on some
     /// platforms.
-    fn set_all(&mut self, settings: &SerialPortSettings) -> serialport::Result<()> {
+    fn set_all(&mut self, settings: &SerialPortSettings) -> ::Result<()> {
         self.inner.set_all(settings)
     }
 
@@ -211,33 +209,33 @@ impl SerialPort for Serial {
     /// If the implementation does not support the requested baud rate, this function may return an
     /// `InvalidInput` error. Even if the baud rate is accepted by `set_baud_rate()`, it may not be
     /// supported by the underlying hardware.
-    fn set_baud_rate(&mut self, baud_rate: u32) -> serialport::Result<()> {
+    fn set_baud_rate(&mut self, baud_rate: u32) -> ::Result<()> {
         self.inner.set_baud_rate(baud_rate)
     }
 
     /// Sets the character size.
-    fn set_data_bits(&mut self, data_bits: ::DataBits) -> serialport::Result<()> {
+    fn set_data_bits(&mut self, data_bits: ::DataBits) -> ::Result<()> {
         self.inner.set_data_bits(data_bits)
     }
 
     /// Sets the flow control mode.
-    fn set_flow_control(&mut self, flow_control: ::FlowControl) -> serialport::Result<()> {
+    fn set_flow_control(&mut self, flow_control: ::FlowControl) -> ::Result<()> {
         self.inner.set_flow_control(flow_control)
     }
 
     /// Sets the parity-checking mode.
-    fn set_parity(&mut self, parity: ::Parity) -> serialport::Result<()> {
+    fn set_parity(&mut self, parity: ::Parity) -> ::Result<()> {
         self.inner.set_parity(parity)
     }
 
     /// Sets the number of stop bits.
-    fn set_stop_bits(&mut self, stop_bits: ::StopBits) -> serialport::Result<()> {
+    fn set_stop_bits(&mut self, stop_bits: ::StopBits) -> ::Result<()> {
         self.inner.set_stop_bits(stop_bits)
     }
 
-    /// Sets the timeout for future I/O operations.  This parameter is ignored but
+    /// Sets the timeout for future I/O operations. This parameter is ignored but
     /// required for trait completeness.
-    fn set_timeout(&mut self, _: Duration) -> serialport::Result<()> {
+    fn set_timeout(&mut self, _: Duration) -> ::Result<()> {
         Ok(())
     }
 
@@ -254,7 +252,7 @@ impl SerialPort for Serial {
     ///
     /// * `NoDevice` if the device was disconnected.
     /// * `Io` for any other type of I/O error.
-    fn write_request_to_send(&mut self, level: bool) -> serialport::Result<()> {
+    fn write_request_to_send(&mut self, level: bool) -> ::Result<()> {
         self.inner.write_request_to_send(level)
     }
 
@@ -269,7 +267,7 @@ impl SerialPort for Serial {
     ///
     /// * `NoDevice` if the device was disconnected.
     /// * `Io` for any other type of I/O error.
-    fn write_data_terminal_ready(&mut self, level: bool) -> serialport::Result<()> {
+    fn write_data_terminal_ready(&mut self, level: bool) -> ::Result<()> {
         self.inner.write_data_terminal_ready(level)
     }
 
@@ -286,7 +284,7 @@ impl SerialPort for Serial {
     ///
     /// * `NoDevice` if the device was disconnected.
     /// * `Io` for any other type of I/O error.
-    fn read_clear_to_send(&mut self) -> serialport::Result<bool> {
+    fn read_clear_to_send(&mut self) -> ::Result<bool> {
         self.inner.read_clear_to_send()
     }
 
@@ -301,7 +299,7 @@ impl SerialPort for Serial {
     ///
     /// * `NoDevice` if the device was disconnected.
     /// * `Io` for any other type of I/O error.
-    fn read_data_set_ready(&mut self) -> serialport::Result<bool> {
+    fn read_data_set_ready(&mut self) -> ::Result<bool> {
         self.inner.read_data_set_ready()
     }
 
@@ -316,7 +314,7 @@ impl SerialPort for Serial {
     ///
     /// * `NoDevice` if the device was disconnected.
     /// * `Io` for any other type of I/O error.
-    fn read_ring_indicator(&mut self) -> serialport::Result<bool> {
+    fn read_ring_indicator(&mut self) -> ::Result<bool> {
         self.inner.read_ring_indicator()
     }
 
@@ -331,7 +329,7 @@ impl SerialPort for Serial {
     ///
     /// * `NoDevice` if the device was disconnected.
     /// * `Io` for any other type of I/O error.
-    fn read_carrier_detect(&mut self) -> serialport::Result<bool> {
+    fn read_carrier_detect(&mut self) -> ::Result<bool> {
         self.inner.read_carrier_detect()
     }
 
@@ -349,7 +347,7 @@ impl SerialPort for Serial {
     /// # Errors
     ///
     /// This function returns an error if the serial port couldn't be cloned.
-    fn try_clone(&self) -> serialport::Result<Box<SerialPort>> {
+    fn try_clone(&self) -> ::Result<Box<SerialPort>> {
         self.inner.try_clone()
     }
 }
