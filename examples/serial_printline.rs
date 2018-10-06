@@ -2,12 +2,12 @@
 extern crate mio;
 extern crate mio_serial;
 
-use mio::{Poll, PollOpt, Events, Token, Ready};
 #[cfg(unix)]
 use mio::unix::UnixReady;
-use std::str;
-use std::io::Read;
+use mio::{Events, Poll, PollOpt, Ready, Token};
 use std::env;
+use std::io::Read;
+use std::str;
 
 const SERIAL_TOKEN: Token = Token(0);
 
@@ -35,7 +35,6 @@ fn is_closed(state: Ready) -> bool {
 }
 
 pub fn main() {
-
     let mut args = env::args();
     let tty_path = args.nth(1).unwrap_or_else(|| DEFAULT_TTY.into());
 
@@ -48,10 +47,7 @@ pub fn main() {
     println!("Opening {} at 9600,8N1", tty_path);
     let mut rx = mio_serial::Serial::from_path(&tty_path, &settings).unwrap();
 
-    poll.register(&rx,
-                  SERIAL_TOKEN,
-                  ready_of_interest(),
-                  PollOpt::edge())
+    poll.register(&rx, SERIAL_TOKEN, ready_of_interest(), PollOpt::edge())
         .unwrap();
 
     let mut rx_buf = [0u8; 1024];
@@ -74,14 +70,12 @@ pub fn main() {
                     }
                     if ready.is_readable() {
                         match rx.read(&mut rx_buf) {
-                            Ok(b) => {
-                                match b {
-                                    b if b > 0 => {
-                                        println!("{:?}", String::from_utf8_lossy(&rx_buf[..b]))
-                                    }
-                                    _ => println!("Read would have blocked."),
+                            Ok(b) => match b {
+                                b if b > 0 => {
+                                    println!("{:?}", String::from_utf8_lossy(&rx_buf[..b]))
                                 }
-                            }
+                                _ => println!("Read would have blocked."),
+                            },
                             Err(e) => println!("Error:  {}", e),
                         }
                     }
