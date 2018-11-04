@@ -1,4 +1,4 @@
-//! Simple example that echos recevied serial traffic to stdout
+//! Simple example that echoes received serial traffic to stdout
 extern crate mio;
 extern crate mio_serial;
 
@@ -6,6 +6,7 @@ extern crate mio_serial;
 use mio::unix::UnixReady;
 use mio::{Events, Poll, PollOpt, Ready, Token};
 use std::env;
+use std::io;
 use std::io::Read;
 use std::str;
 
@@ -20,6 +21,7 @@ const DEFAULT_TTY: &str = "COM1";
 fn ready_of_interest() -> Ready {
     Ready::readable() | UnixReady::hup() | UnixReady::error()
 }
+
 #[cfg(windows)]
 fn ready_of_interest() -> Ready {
     Ready::readable()
@@ -29,6 +31,7 @@ fn ready_of_interest() -> Ready {
 fn is_closed(state: Ready) -> bool {
     state.contains(UnixReady::hup() | UnixReady::error())
 }
+
 #[cfg(windows)]
 fn is_closed(state: Ready) -> bool {
     false
@@ -53,7 +56,10 @@ pub fn main() {
     let mut rx_buf = [0u8; 1024];
 
     'outer: loop {
-        poll.poll(&mut events, None).unwrap();
+        if let Err(ref e) = poll.poll(&mut events, None) {
+            println!("poll failed: {}", e);
+            break;
+        }
 
         if events.is_empty() {
             println!("Read timed out!");
@@ -69,14 +75,21 @@ pub fn main() {
                         break 'outer;
                     }
                     if ready.is_readable() {
-                        match rx.read(&mut rx_buf) {
-                            Ok(b) => match b {
-                                b if b > 0 => {
-                                    println!("{:?}", String::from_utf8_lossy(&rx_buf[..b]))
+                        // With edge triggered events, we must perform reading until we receive a WouldBlock.
+                        // See https://docs.rs/mio/0.6.16/mio/struct.Poll.html for details.
+                        loop {
+                            match rx.read(&mut rx_buf) {
+                                Ok(count) => {
+                                    println!("{:?}", String::from_utf8_lossy(&rx_buf[..count]))
                                 }
-                                _ => println!("Read would have blocked."),
-                            },
-                            Err(e) => println!("Error:  {}", e),
+                                Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => {
+                                    break;
+                                }
+                                Err(ref e) => {
+                                    println!("Quitting due to read error: {}", e);
+                                    break 'outer;
+                                }
+                            }
                         }
                     }
                 }
