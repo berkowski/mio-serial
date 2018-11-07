@@ -76,7 +76,7 @@ pub fn main() {
                     }
                     if ready.is_readable() {
                         // With edge triggered events, we must perform reading until we receive a WouldBlock.
-                        // See https://docs.rs/mio/0.6.16/mio/struct.Poll.html for details.
+                        // See https://docs.rs/mio/0.6/mio/struct.Poll.html for details.
                         loop {
                             match rx.read(&mut rx_buf) {
                                 Ok(count) => {
