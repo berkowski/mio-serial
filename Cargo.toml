@@ -11,6 +11,10 @@ readme = "README.md"
 keywords = ["rs232", "serial", "mio"]
 categories = ["asynchronous", "hardware-support"]
 
+[badges]
+appveyor = { repository = "berkowski/mio-serial", service = "github" }
+travis-ci = { repository = "berkowski/mio-serial", service = "github" }
+
 [features]
 default = ["libudev"]
 
