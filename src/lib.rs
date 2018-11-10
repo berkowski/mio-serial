@@ -22,6 +22,7 @@ extern crate winapi;
 // Enums, Structs, and Traits from the serialport crate
 pub use serialport::{
     // Enums
+    ClearBuffer,
     DataBits,
     // Structs
     Error,
