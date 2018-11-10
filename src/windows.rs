@@ -269,6 +269,42 @@ impl SerialPort for Serial {
         self.inner.read_carrier_detect()
     }
 
+    /// Gets the number of bytes available to be read from the input buffer.
+    ///
+    /// # Errors
+    ///
+    /// This function may return the following errors:
+    ///
+    /// * `NoDevice` if the device was disconnected.
+    /// * `Io` for any other type of I/O error.
+    fn bytes_to_read(&self) -> ::Result<u32> {
+        self.inner.bytes_to_read()
+    }
+
+    /// Get the number of bytes written to the output buffer, awaiting transmission.
+    ///
+    /// # Errors
+    ///
+    /// This function may return the following errors:
+    ///
+    /// * `NoDevice` if the device was disconnected.
+    /// * `Io` for any other type of I/O error.
+    fn bytes_to_write(&self) -> ::Result<u32> {
+        self.inner.bytes_to_write()
+    }
+
+    /// Discards all bytes from the serial driver's input buffer and/or output buffer.
+    ///
+    /// # Errors
+    ///
+    /// This function may return the following errors:
+    ///
+    /// * `NoDevice` if the device was disconnected.
+    /// * `Io` for any other type of I/O error.
+    fn clear(&self, buffer_to_clear: ClearBuffer) -> ::Result<()> {
+        self.inner.clear(buffer_to_clear)
+    }
+
     // Misc methods
 
     /// Attempts to clone the `SerialPort`. This allow you to write and read simultaneously from the

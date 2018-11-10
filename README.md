@@ -12,13 +12,22 @@ Add `mio-serial` to you `Cargo.toml`:
 
 ```toml
 [dependencies]
-mio-serial = "3.0"
+mio-serial = "3.1"
 ```
 
 Then add this to your crate root:
 
 ```rust
 extern crate mio_serial;
+```
+
+## Features
+
+The "libudev" dependency of `serialport-rs` is enabled by default.  For x86 linux systems this enables the `available_ports` function for port enumeration.
+Not all targets support udev, especially when cross-compiling.  To disable this feature, compile with the `--no-default-features` option.  For example:
+
+```
+cargo build --no-default-features
 ```
 
 ## Examples

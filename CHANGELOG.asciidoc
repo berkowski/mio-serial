@@ -5,8 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on http://keepachangelog.com/[Keep a Changelog]
 and this project adheres to http://semver.org/[Semantic Versioning].
 
-=== [UNVERSIONED] UNRELEASED
+=== [3.1] UNRELEASED
+==== Added
+* Added "libudev" feature.  Enabled by default, can be disabled for targets without udev support.
+
 ==== Changed
+* Bumped [serialport-rs](https://gitlab.com/susurrus/serialport-rs) to 3.1
 * Merged [#13](https://github.com/berkowski/mio-serial/pull/13) @dvtomas added some clarity to the example.
 
 === [3.0.1] - 2018-11-06
