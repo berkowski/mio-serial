@@ -1,6 +1,6 @@
 [package]
 name = "mio-serial"
-version = "3.1.1"
+version = "3.2.0"
 authors = ["Zac Berkowitz <zac.berkowitz@gmail.com>"]
 description = "A serial port implementation for mio"
 license = "MIT"
@@ -22,7 +22,7 @@ libudev = ["serialport/libudev"]
 
 [dependencies]
 mio = "0.6"
-serialport = { version = "~3.1", default-features = false }
+serialport = { version = "~3.2", default-features = false }
 
 [target.'cfg(unix)'.dependencies]
 nix = "0.11"
