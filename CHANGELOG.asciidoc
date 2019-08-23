@@ -5,6 +5,9 @@ All notable changes to this project will be documented in this file.
 The format is based on http://keepachangelog.com/[Keep a Changelog]
 and this project adheres to http://semver.org/[Semantic Versioning].
 
+=== [3.3.0] 2019-08-23
+* Bumped [serialport-rs](https://gitlab.com/susurrus/serialport-rs) to 3.2
+
 === [3.2.14] 2019-06-01
 ==== Changed
 * Bumped [nix](https://github.com/nix-rust/nix) to 0.14 to address [#17](https://github.com/berkowski/mio-serial/issues/17)

@@ -1,6 +1,6 @@
 [package]
 name = "mio-serial"
-version = "3.2.14"
+version = "3.3.0"
 authors = ["Zac Berkowitz <zac.berkowitz@gmail.com>"]
 description = "A serial port implementation for mio"
 license = "MIT"
@@ -10,6 +10,7 @@ documentation = "http://docs.rs/mio-serial"
 readme = "README.md"
 keywords = ["rs232", "serial", "mio"]
 categories = ["asynchronous", "hardware-support"]
+edition = "2018"
 
 [badges]
 appveyor = { repository = "berkowski/mio-serial", service = "github" }
@@ -22,7 +23,7 @@ libudev = ["serialport/libudev"]
 
 [dependencies]
 mio = "^0.6"
-serialport = { version = "~3.2", default-features = false }
+serialport = { version = "~3.3", default-features = false }
 
 [target.'cfg(unix)'.dependencies]
 nix = "^0.14"

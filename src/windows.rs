@@ -79,7 +79,7 @@ impl SerialPort for Serial {
     /// This function returns `None` if the baud rate could not be determined. This may occur if
     /// the hardware is in an uninitialized state. Setting a baud rate with `set_baud_rate()`
     /// should initialize the baud rate to a supported value.
-    fn baud_rate(&self) -> ::Result<u32> {
+    fn baud_rate(&self) -> crate::Result<u32> {
         self.inner.baud_rate()
     }
 
@@ -89,7 +89,7 @@ impl SerialPort for Serial {
     /// if the hardware is in an uninitialized state or is using a non-standard character size.
     /// Setting a baud rate with `set_char_size()` should initialize the character size to a
     /// supported value.
-    fn data_bits(&self) -> ::Result<::DataBits> {
+    fn data_bits(&self) -> crate::Result<DataBits> {
         self.inner.data_bits()
     }
 
@@ -99,7 +99,7 @@ impl SerialPort for Serial {
     /// occur if the hardware is in an uninitialized state or is using an unsupported flow control
     /// mode. Setting a flow control mode with `set_flow_control()` should initialize the flow
     /// control mode to a supported value.
-    fn flow_control(&self) -> ::Result<::FlowControl> {
+    fn flow_control(&self) -> crate::Result<FlowControl> {
         self.inner.flow_control()
     }
 
@@ -108,7 +108,7 @@ impl SerialPort for Serial {
     /// This function returns `None` if the parity mode could not be determined. This may occur if
     /// the hardware is in an uninitialized state or is using a non-standard parity mode. Setting
     /// a parity mode with `set_parity()` should initialize the parity mode to a supported value.
-    fn parity(&self) -> ::Result<::Parity> {
+    fn parity(&self) -> crate::Result<Parity> {
         self.inner.parity()
     }
 
@@ -118,7 +118,7 @@ impl SerialPort for Serial {
     /// occur if the hardware is in an uninitialized state or is using an unsupported stop bit
     /// configuration. Setting the number of stop bits with `set_stop-bits()` should initialize the
     /// stop bits to a supported value.
-    fn stop_bits(&self) -> ::Result<::StopBits> {
+    fn stop_bits(&self) -> crate::Result<StopBits> {
         self.inner.stop_bits()
     }
 
@@ -132,7 +132,7 @@ impl SerialPort for Serial {
     /// Applies all settings for a struct. This isn't guaranteed to involve only
     /// a single call into the driver, though that may be done on some
     /// platforms.
-    fn set_all(&mut self, settings: &SerialPortSettings) -> ::Result<()> {
+    fn set_all(&mut self, settings: &SerialPortSettings) -> crate::Result<()> {
         self.inner.set_all(settings)?;
         override_comm_timeouts(self.inner.as_raw_handle())?;
         Ok(())
@@ -145,33 +145,33 @@ impl SerialPort for Serial {
     /// If the implementation does not support the requested baud rate, this function may return an
     /// `InvalidInput` error. Even if the baud rate is accepted by `set_baud_rate()`, it may not be
     /// supported by the underlying hardware.
-    fn set_baud_rate(&mut self, baud_rate: u32) -> ::Result<()> {
+    fn set_baud_rate(&mut self, baud_rate: u32) -> crate::Result<()> {
         self.inner.set_baud_rate(baud_rate)
     }
 
     /// Sets the character size.
-    fn set_data_bits(&mut self, data_bits: ::DataBits) -> ::Result<()> {
+    fn set_data_bits(&mut self, data_bits: ::DataBits) -> crate::Result<()> {
         self.inner.set_data_bits(data_bits)
     }
 
     /// Sets the flow control mode.
-    fn set_flow_control(&mut self, flow_control: ::FlowControl) -> ::Result<()> {
+    fn set_flow_control(&mut self, flow_control: ::FlowControl) -> crate::Result<()> {
         self.inner.set_flow_control(flow_control)
     }
 
     /// Sets the parity-checking mode.
-    fn set_parity(&mut self, parity: ::Parity) -> ::Result<()> {
+    fn set_parity(&mut self, parity: ::Parity) -> crate::Result<()> {
         self.inner.set_parity(parity)
     }
 
     /// Sets the number of stop bits.
-    fn set_stop_bits(&mut self, stop_bits: ::StopBits) -> ::Result<()> {
+    fn set_stop_bits(&mut self, stop_bits: ::StopBits) -> crate::Result<()> {
         self.inner.set_stop_bits(stop_bits)
     }
 
     /// Sets the timeout for future I/O operations.  This parameter is ignored but
     /// required for trait completeness.
-    fn set_timeout(&mut self, _: Duration) -> ::Result<()> {
+    fn set_timeout(&mut self, _: Duration) -> crate::Result<()> {
         Ok(())
     }
 
@@ -188,7 +188,7 @@ impl SerialPort for Serial {
     ///
     /// * `NoDevice` if the device was disconnected.
     /// * `Io` for any other type of I/O error.
-    fn write_request_to_send(&mut self, level: bool) -> ::Result<()> {
+    fn write_request_to_send(&mut self, level: bool) -> crate::Result<()> {
         self.inner.write_request_to_send(level)
     }
 
@@ -203,7 +203,7 @@ impl SerialPort for Serial {
     ///
     /// * `NoDevice` if the device was disconnected.
     /// * `Io` for any other type of I/O error.
-    fn write_data_terminal_ready(&mut self, level: bool) -> ::Result<()> {
+    fn write_data_terminal_ready(&mut self, level: bool) -> crate::Result<()> {
         self.inner.write_data_terminal_ready(level)
     }
 
@@ -220,7 +220,7 @@ impl SerialPort for Serial {
     ///
     /// * `NoDevice` if the device was disconnected.
     /// * `Io` for any other type of I/O error.
-    fn read_clear_to_send(&mut self) -> ::Result<bool> {
+    fn read_clear_to_send(&mut self) -> crate::Result<bool> {
         self.inner.read_clear_to_send()
     }
 
@@ -235,7 +235,7 @@ impl SerialPort for Serial {
     ///
     /// * `NoDevice` if the device was disconnected.
     /// * `Io` for any other type of I/O error.
-    fn read_data_set_ready(&mut self) -> ::Result<bool> {
+    fn read_data_set_ready(&mut self) -> crate::Result<bool> {
         self.inner.read_data_set_ready()
     }
 
@@ -250,7 +250,7 @@ impl SerialPort for Serial {
     ///
     /// * `NoDevice` if the device was disconnected.
     /// * `Io` for any other type of I/O error.
-    fn read_ring_indicator(&mut self) -> ::Result<bool> {
+    fn read_ring_indicator(&mut self) -> crate::Result<bool> {
         self.inner.read_ring_indicator()
     }
 
@@ -265,7 +265,7 @@ impl SerialPort for Serial {
     ///
     /// * `NoDevice` if the device was disconnected.
     /// * `Io` for any other type of I/O error.
-    fn read_carrier_detect(&mut self) -> ::Result<bool> {
+    fn read_carrier_detect(&mut self) -> crate::Result<bool> {
         self.inner.read_carrier_detect()
     }
 
@@ -277,7 +277,7 @@ impl SerialPort for Serial {
     ///
     /// * `NoDevice` if the device was disconnected.
     /// * `Io` for any other type of I/O error.
-    fn bytes_to_read(&self) -> ::Result<u32> {
+    fn bytes_to_read(&self) -> crate::Result<u32> {
         self.inner.bytes_to_read()
     }
 
@@ -289,7 +289,7 @@ impl SerialPort for Serial {
     ///
     /// * `NoDevice` if the device was disconnected.
     /// * `Io` for any other type of I/O error.
-    fn bytes_to_write(&self) -> ::Result<u32> {
+    fn bytes_to_write(&self) -> crate::Result<u32> {
         self.inner.bytes_to_write()
     }
 
@@ -301,7 +301,7 @@ impl SerialPort for Serial {
     ///
     /// * `NoDevice` if the device was disconnected.
     /// * `Io` for any other type of I/O error.
-    fn clear(&self, buffer_to_clear: ClearBuffer) -> ::Result<()> {
+    fn clear(&self, buffer_to_clear: ClearBuffer) -> crate::Result<()> {
         self.inner.clear(buffer_to_clear)
     }
 
@@ -319,7 +319,7 @@ impl SerialPort for Serial {
     /// # Errors
     ///
     /// This function returns an error if the serial port couldn't be cloned.
-    fn try_clone(&self) -> ::Result<Box<SerialPort>> {
+    fn try_clone(&self) -> crate::Result<Box<dyn SerialPort>> {
         self.inner.try_clone()
     }
 }

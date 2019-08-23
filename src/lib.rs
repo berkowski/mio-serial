@@ -8,16 +8,7 @@
 //!   - repo:  https://github.com/berkowski/mio-serial
 //!   - docs:  https://docs.rs/mio-serial
 #![deny(missing_docs)]
-
-extern crate mio;
-extern crate serialport;
-
-#[cfg(windows)]
-extern crate mio_named_pipes;
-#[cfg(unix)]
-extern crate nix;
-#[cfg(windows)]
-extern crate winapi;
+#![warn(rust_2018_idioms)]
 
 // Enums, Structs, and Traits from the serialport crate
 pub use serialport::{
