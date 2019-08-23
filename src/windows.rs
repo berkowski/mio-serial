@@ -150,22 +150,22 @@ impl SerialPort for Serial {
     }
 
     /// Sets the character size.
-    fn set_data_bits(&mut self, data_bits: ::DataBits) -> crate::Result<()> {
+    fn set_data_bits(&mut self, data_bits: DataBits) -> crate::Result<()> {
         self.inner.set_data_bits(data_bits)
     }
 
     /// Sets the flow control mode.
-    fn set_flow_control(&mut self, flow_control: ::FlowControl) -> crate::Result<()> {
+    fn set_flow_control(&mut self, flow_control: FlowControl) -> crate::Result<()> {
         self.inner.set_flow_control(flow_control)
     }
 
     /// Sets the parity-checking mode.
-    fn set_parity(&mut self, parity: ::Parity) -> crate::Result<()> {
+    fn set_parity(&mut self, parity: Parity) -> crate::Result<()> {
         self.inner.set_parity(parity)
     }
 
     /// Sets the number of stop bits.
-    fn set_stop_bits(&mut self, stop_bits: ::StopBits) -> crate::Result<()> {
+    fn set_stop_bits(&mut self, stop_bits: StopBits) -> crate::Result<()> {
         self.inner.set_stop_bits(stop_bits)
     }
 
