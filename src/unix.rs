@@ -16,6 +16,7 @@ use nix::sys::termios::{self, SetArg, SpecialCharacterIndices};
 use nix::{self, libc};
 
 /// *nix serial port using termios
+#[derive(Debug)]
 pub struct Serial {
     inner: TTYPort,
 }

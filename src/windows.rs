@@ -18,6 +18,7 @@ use winapi::um::winbase::{COMMTIMEOUTS, FILE_FLAG_OVERLAPPED};
 use winapi::um::winnt::{FILE_ATTRIBUTE_NORMAL, GENERIC_READ, GENERIC_WRITE, HANDLE};
 
 /// Windows serial port
+#[derive(Debug)]
 pub struct Serial {
     inner: COMPort,
     pipe: NamedPipe,
