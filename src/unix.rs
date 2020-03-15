@@ -394,9 +394,20 @@ impl SerialPort for Serial {
     }
 }
 
+macro_rules! uninterruptibly {
+    ($e:expr) => {{
+        loop {
+            match $e {
+                Err(ref error) if error.kind() == io::ErrorKind::Interrupted => {}
+                res => break res,
+            }
+        }
+    }};
+}
+
 impl Read for Serial {
     fn read(&mut self, bytes: &mut [u8]) -> io::Result<usize> {
-        match unsafe {
+        uninterruptibly!(match unsafe {
             libc::read(
                 self.as_raw_fd(),
                 bytes.as_ptr() as *mut libc::c_void,
@@ -405,13 +416,13 @@ impl Read for Serial {
         } {
             x if x >= 0 => Ok(x as usize),
             _ => Err(io::Error::last_os_error()),
-        }
+        })
     }
 }
 
 impl Write for Serial {
     fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
-        match unsafe {
+        uninterruptibly!(match unsafe {
             libc::write(
                 self.as_raw_fd(),
                 bytes.as_ptr() as *const libc::c_void,
@@ -420,19 +431,22 @@ impl Write for Serial {
         } {
             x if x >= 0 => Ok(x as usize),
             _ => Err(io::Error::last_os_error()),
-        }
+        })
     }
 
     fn flush(&mut self) -> io::Result<()> {
-        termios::tcdrain(self.inner.as_raw_fd())
-            .map_err(|e| io::Error::new(io::ErrorKind::Other, e.to_string()))
-        //self.inner.flush()
+        uninterruptibly!(
+            termios::tcdrain(self.inner.as_raw_fd()).map_err(|error| match error {
+                nix::Error::Sys(errno) => io::Error::from(errno),
+                error => io::Error::new(io::ErrorKind::Other, error.to_string()),
+            })
+        )
     }
 }
 
 impl<'a> Read for &'a Serial {
     fn read(&mut self, bytes: &mut [u8]) -> io::Result<usize> {
-        match unsafe {
+        uninterruptibly!(match unsafe {
             libc::read(
                 self.as_raw_fd(),
                 bytes.as_ptr() as *mut libc::c_void,
@@ -441,13 +455,13 @@ impl<'a> Read for &'a Serial {
         } {
             x if x >= 0 => Ok(x as usize),
             _ => Err(io::Error::last_os_error()),
-        }
+        })
     }
 }
 
 impl<'a> Write for &'a Serial {
     fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
-        match unsafe {
+        uninterruptibly!(match unsafe {
             libc::write(
                 self.as_raw_fd(),
                 bytes.as_ptr() as *const libc::c_void,
@@ -456,12 +470,16 @@ impl<'a> Write for &'a Serial {
         } {
             x if x >= 0 => Ok(x as usize),
             _ => Err(io::Error::last_os_error()),
-        }
+        })
     }
 
     fn flush(&mut self) -> io::Result<()> {
-        termios::tcdrain(self.inner.as_raw_fd())
-            .map_err(|e| io::Error::new(io::ErrorKind::Other, e.to_string()))
+        uninterruptibly!(
+            termios::tcdrain(self.inner.as_raw_fd()).map_err(|error| match error {
+                nix::Error::Sys(errno) => io::Error::from(errno),
+                error => io::Error::new(io::ErrorKind::Other, error.to_string()),
+            })
+        )
     }
 }
 
