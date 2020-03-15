@@ -2,7 +2,7 @@
 //!
 //! This crate provides a serial port implementation compatable with mio.
 //!
-//! **At this time this crate ONLY provides a unix implementation**
+//! **Windows support is present but largely untested by the author**
 //!
 //! ## Links
 //!   - repo:  https://github.com/berkowski/mio-serial
