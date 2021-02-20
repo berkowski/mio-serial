@@ -2,16 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
-The format is based on http://keepachangelog.com/[Keep a Changelog]
-and this project adheres to http://semver.org/[Semantic Versioning].
+The format is based on [Keep a Changelog](http://keepachangelog.com/)
+and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [4.0.0] UNRELEASED
+
+### BREAKING CHANGES
+This release contains multiple API breaking changes with the move to [serialport-rs](https://gitlab.com/sussurrrus/serialport-rs) v4.
+Specifically:
+
+* Renamed `mio-serial::unix::Serial` to `mio-serial::unix::TTYPort`
+* Removed `TTYPort::from_path`, use `TTYPort::open`
+* Removed `TTYPort::from_serial`.  Replaced with impl of `std::convert::TryFrom<serialport::TTYPort>`
+* Removed `SerialPortSettings`, `serialport-rs` now uses the builder pattern
 
 ### Changed
 * Removed "libudev" from the default features.  Still available for use when desired.
 * Bumped [nix](https://github.com/nix-rust/nix) to 0.19
 * Bumped [mio](https://github.com/tokio-rs/mio) to 0.7
-* Bumped [mio](https://gitlab.com/sussurrrus/serialport-rs) to 4.0.0
+* Bumped [serialport-rs](https://gitlab.com/sussurrrus/serialport-rs) to 4.0.0
 * Changed CHANGELOG from asciidoc to markdown
 
 ## [3.3.1] 2020-03-15

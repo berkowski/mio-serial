@@ -1,91 +1,38 @@
 //! Unix impl of mio-enabled serial ports.
-use std::convert::AsRef;
 use std::io::{self, Read, Write};
 use std::os::unix::prelude::*;
-use std::path::Path;
 use std::time::Duration;
-
-use mio::unix::EventedFd;
-use mio::{Evented, Poll, PollOpt, Ready, Token};
-
-use serialport::posix::TTYPort;
-use serialport::prelude::*;
-use serialport::{Error, ErrorKind};
+use std::convert::TryFrom;
 
 use nix::sys::termios::{self, SetArg, SpecialCharacterIndices};
 use nix::{self, libc};
 
 /// *nix serial port using termios
 #[derive(Debug)]
-pub struct Serial {
-    inner: TTYPort,
+pub struct TTYPort {
+    inner: serialport::TTYPort,
 }
 
-fn map_nix_error(e: nix::Error) -> Error {
-    Error {
-        kind: ErrorKind::Io(io::ErrorKind::Other),
+fn map_nix_error(e: nix::Error) -> crate::Error {
+    crate::Error {
+        kind: crate::ErrorKind::Io(io::ErrorKind::Other),
         description: e.to_string(),
     }
 }
 
-impl Serial {
-    /// Open a nonblocking serial port from the provided path.
+impl TTYPort {
+    /// Open a nonblocking serial port from the provided builder
     ///
     /// ## Example
     ///
     /// ```ignore
     /// use std::path::Path;
-    /// use mio_serial::unix::Serial;
-    /// use mio_serial::SerialPortSettings;
     ///
-    /// let tty_name = Path::new("/dev/ttyUSB0");
-    ///
-    /// let serial = Serial::from_path(tty_name, &SerialPortSettings::default()).unwrap();
+    /// let serial = TTYSerial::open(tty_name, 9600).unwrap();
     /// ```
-    pub fn from_path<T: AsRef<Path>>(
-        path: T,
-        settings: &SerialPortSettings,
-    ) -> crate::Result<Self> {
-        let port = TTYPort::open(path.as_ref(), settings)?;
-        Serial::from_serial(port)
-    }
-
-    /// Convert an existing `serialport::posix::TTYPort` struct.
-    ///
-    ///
-    /// ## Example
-    ///
-    /// ```ignore
-    /// extern crate serialport;
-    ///
-    /// use std::path::Path;
-    /// use serialport::posix::TTYPort;
-    /// use mio_serial::unix::Serial;
-    ///
-    /// let tty_name = Path::new("/dev/ttyUSB0");
-    /// let blocking_serial = TTYPort::open(tty_path).unwrap();
-    ///
-    /// let serial = Serial::from_serial(blocking_serial).unwrap();
-    /// # fn main() {}
-    /// ```
-    pub fn from_serial(port: TTYPort) -> crate::Result<Self> {
-        // Get the termios structure
-        let mut t = termios::tcgetattr(port.as_raw_fd()).map_err(map_nix_error)?;
-
-        // Set VMIN = 1 to block until at least one character is received.
-        t.control_chars[SpecialCharacterIndices::VMIN as usize] = 1;
-        termios::tcsetattr(port.as_raw_fd(), SetArg::TCSANOW, &t).map_err(map_nix_error)?;
-
-        // Set the O_NONBLOCK flag.
-        let flags = unsafe { libc::fcntl(port.as_raw_fd(), libc::F_GETFL) };
-        if flags < 0 {
-            return Err(io::Error::last_os_error().into());
-        }
-
-        match unsafe { libc::fcntl(port.as_raw_fd(), libc::F_SETFL, flags | libc::O_NONBLOCK) } {
-            0 => Ok(Serial { inner: port }),
-            _ => Err(io::Error::last_os_error().into()),
-        }
+    pub fn open(builder: &crate::SerialPortBuilder) -> crate::Result<TTYPort> {
+        let tty = serialport::TTYPort::open(builder)?;
+        TTYPort::try_from(tty)
     }
 
     /// Create a pair of pseudo serial terminals
@@ -105,10 +52,10 @@ impl Serial {
     /// let (master, slave) = Serial::pair().unwrap();
     /// ```
     pub fn pair() -> crate::Result<(Self, Self)> {
-        let (master, slave) = TTYPort::pair()?;
+        let (master, slave) = serialport::TTYPort::pair()?;
 
-        let master = Self::from_serial(master)?;
-        let slave = Self::from_serial(slave)?;
+        let master = Self::try_from(master)?;
+        let slave = Self::try_from(slave)?;
 
         Ok((master, slave))
     }
@@ -136,13 +83,22 @@ impl Serial {
     }
 }
 
-impl SerialPort for Serial {
-    /// Returns a struct with the current port settings
-    fn settings(&self) -> SerialPortSettings {
-        self.inner.settings()
+impl crate::SerialPort for TTYPort {
+
+    /// Start transmitting a break
+    #[inline(always)]
+    fn set_break(&self) -> crate::Result<()> {
+        self.inner.set_break()
+    }
+
+    /// Stop transmitting a break
+    #[inline(always)]
+    fn clear_break(&self) -> crate::Result<()> {
+        self.inner.clear_break()
     }
 
     /// Return the name associated with the serial port, if known.
+    #[inline(always)]
     fn name(&self) -> Option<String> {
         self.inner.name()
     }
@@ -152,6 +108,7 @@ impl SerialPort for Serial {
     /// This function returns `None` if the baud rate could not be determined. This may occur if
     /// the hardware is in an uninitialized state. Setting a baud rate with `set_baud_rate()`
     /// should initialize the baud rate to a supported value.
+    #[inline(always)]
     fn baud_rate(&self) -> crate::Result<u32> {
         self.inner.baud_rate()
     }
@@ -162,7 +119,8 @@ impl SerialPort for Serial {
     /// if the hardware is in an uninitialized state or is using a non-standard character size.
     /// Setting a baud rate with `set_char_size()` should initialize the character size to a
     /// supported value.
-    fn data_bits(&self) -> crate::Result<DataBits> {
+    #[inline(always)]
+    fn data_bits(&self) -> crate::Result<crate::DataBits> {
         self.inner.data_bits()
     }
 
@@ -172,7 +130,8 @@ impl SerialPort for Serial {
     /// occur if the hardware is in an uninitialized state or is using an unsupported flow control
     /// mode. Setting a flow control mode with `set_flow_control()` should initialize the flow
     /// control mode to a supported value.
-    fn flow_control(&self) -> crate::Result<FlowControl> {
+    #[inline(always)]
+    fn flow_control(&self) -> crate::Result<crate::FlowControl> {
         self.inner.flow_control()
     }
 
@@ -181,7 +140,8 @@ impl SerialPort for Serial {
     /// This function returns `None` if the parity mode could not be determined. This may occur if
     /// the hardware is in an uninitialized state or is using a non-standard parity mode. Setting
     /// a parity mode with `set_parity()` should initialize the parity mode to a supported value.
-    fn parity(&self) -> crate::Result<Parity> {
+    #[inline(always)]
+    fn parity(&self) -> crate::Result<crate::Parity> {
         self.inner.parity()
     }
 
@@ -191,24 +151,19 @@ impl SerialPort for Serial {
     /// occur if the hardware is in an uninitialized state or is using an unsupported stop bit
     /// configuration. Setting the number of stop bits with `set_stop-bits()` should initialize the
     /// stop bits to a supported value.
-    fn stop_bits(&self) -> crate::Result<StopBits> {
+    #[inline(always)]
+    fn stop_bits(&self) -> crate::Result<crate::StopBits> {
         self.inner.stop_bits()
     }
 
     /// Returns the current timeout. This parameter is const and equal to zero and implemented due
     /// to required for trait completeness.
+    #[inline(always)]
     fn timeout(&self) -> Duration {
         Duration::from_secs(0)
     }
 
     // Port settings setters
-
-    /// Applies all settings for a struct. This isn't guaranteed to involve only
-    /// a single call into the driver, though that may be done on some
-    /// platforms.
-    fn set_all(&mut self, settings: &SerialPortSettings) -> crate::Result<()> {
-        self.inner.set_all(settings)
-    }
 
     /// Sets the baud rate.
     ///
@@ -217,32 +172,38 @@ impl SerialPort for Serial {
     /// If the implementation does not support the requested baud rate, this function may return an
     /// `InvalidInput` error. Even if the baud rate is accepted by `set_baud_rate()`, it may not be
     /// supported by the underlying hardware.
+    #[inline(always)]
     fn set_baud_rate(&mut self, baud_rate: u32) -> crate::Result<()> {
         self.inner.set_baud_rate(baud_rate)
     }
 
     /// Sets the character size.
-    fn set_data_bits(&mut self, data_bits: DataBits) -> crate::Result<()> {
+    #[inline(always)]
+    fn set_data_bits(&mut self, data_bits: crate::DataBits) -> crate::Result<()> {
         self.inner.set_data_bits(data_bits)
     }
 
     /// Sets the flow control mode.
-    fn set_flow_control(&mut self, flow_control: FlowControl) -> crate::Result<()> {
+    #[inline(always)]
+    fn set_flow_control(&mut self, flow_control: crate::FlowControl) -> crate::Result<()> {
         self.inner.set_flow_control(flow_control)
     }
 
     /// Sets the parity-checking mode.
-    fn set_parity(&mut self, parity: Parity) -> crate::Result<()> {
+    #[inline(always)]
+    fn set_parity(&mut self, parity: crate::Parity) -> crate::Result<()> {
         self.inner.set_parity(parity)
     }
 
     /// Sets the number of stop bits.
-    fn set_stop_bits(&mut self, stop_bits: StopBits) -> crate::Result<()> {
+    #[inline(always)]
+    fn set_stop_bits(&mut self, stop_bits: crate::StopBits) -> crate::Result<()> {
         self.inner.set_stop_bits(stop_bits)
     }
 
     /// Sets the timeout for future I/O operations. This parameter is ignored but
     /// required for trait completeness.
+    #[inline(always)]
     fn set_timeout(&mut self, _: Duration) -> crate::Result<()> {
         Ok(())
     }
@@ -260,6 +221,7 @@ impl SerialPort for Serial {
     ///
     /// * `NoDevice` if the device was disconnected.
     /// * `Io` for any other type of I/O error.
+    #[inline(always)]
     fn write_request_to_send(&mut self, level: bool) -> crate::Result<()> {
         self.inner.write_request_to_send(level)
     }
@@ -275,6 +237,7 @@ impl SerialPort for Serial {
     ///
     /// * `NoDevice` if the device was disconnected.
     /// * `Io` for any other type of I/O error.
+    #[inline(always)]
     fn write_data_terminal_ready(&mut self, level: bool) -> crate::Result<()> {
         self.inner.write_data_terminal_ready(level)
     }
@@ -292,6 +255,7 @@ impl SerialPort for Serial {
     ///
     /// * `NoDevice` if the device was disconnected.
     /// * `Io` for any other type of I/O error.
+    #[inline(always)]
     fn read_clear_to_send(&mut self) -> crate::Result<bool> {
         self.inner.read_clear_to_send()
     }
@@ -307,6 +271,7 @@ impl SerialPort for Serial {
     ///
     /// * `NoDevice` if the device was disconnected.
     /// * `Io` for any other type of I/O error.
+    #[inline(always)]
     fn read_data_set_ready(&mut self) -> crate::Result<bool> {
         self.inner.read_data_set_ready()
     }
@@ -322,6 +287,7 @@ impl SerialPort for Serial {
     ///
     /// * `NoDevice` if the device was disconnected.
     /// * `Io` for any other type of I/O error.
+    #[inline(always)]
     fn read_ring_indicator(&mut self) -> crate::Result<bool> {
         self.inner.read_ring_indicator()
     }
@@ -337,6 +303,7 @@ impl SerialPort for Serial {
     ///
     /// * `NoDevice` if the device was disconnected.
     /// * `Io` for any other type of I/O error.
+    #[inline(always)]
     fn read_carrier_detect(&mut self) -> crate::Result<bool> {
         self.inner.read_carrier_detect()
     }
@@ -349,6 +316,7 @@ impl SerialPort for Serial {
     ///
     /// * `NoDevice` if the device was disconnected.
     /// * `Io` for any other type of I/O error.
+    #[inline(always)]
     fn bytes_to_read(&self) -> crate::Result<u32> {
         self.inner.bytes_to_read()
     }
@@ -361,6 +329,7 @@ impl SerialPort for Serial {
     ///
     /// * `NoDevice` if the device was disconnected.
     /// * `Io` for any other type of I/O error.
+    #[inline(always)]
     fn bytes_to_write(&self) -> crate::Result<u32> {
         self.inner.bytes_to_write()
     }
@@ -373,7 +342,8 @@ impl SerialPort for Serial {
     ///
     /// * `NoDevice` if the device was disconnected.
     /// * `Io` for any other type of I/O error.
-    fn clear(&self, buffer_to_clear: ClearBuffer) -> crate::Result<()> {
+    #[inline(always)]
+    fn clear(&self, buffer_to_clear: crate::ClearBuffer) -> crate::Result<()> {
         self.inner.clear(buffer_to_clear)
     }
 
@@ -389,8 +359,32 @@ impl SerialPort for Serial {
     /// # Errors
     ///
     /// This function returns an error if the serial port couldn't be cloned.
-    fn try_clone(&self) -> crate::Result<Box<dyn SerialPort>> {
+    #[inline(always)]
+    fn try_clone(&self) -> crate::Result<Box<dyn crate::SerialPort>> {
         self.inner.try_clone()
+    }
+}
+
+impl TryFrom<serialport::TTYPort> for TTYPort {
+    type Error = crate::Error;
+    fn try_from(tty: serialport::TTYPort) -> Result<Self, Self::Error> {
+
+        let mut t = termios::tcgetattr(tty.as_raw_fd()).map_err(map_nix_error)?;
+
+        // Set VMIN = 1 to block until at least one character is received.
+        t.control_chars[SpecialCharacterIndices::VMIN as usize] = 1;
+        termios::tcsetattr(tty.as_raw_fd(), SetArg::TCSANOW, &t).map_err(map_nix_error)?;
+
+        // Set the O_NONBLOCK flag.
+        let flags = unsafe { libc::fcntl(tty.as_raw_fd(), libc::F_GETFL) };
+        if flags < 0 {
+            return Err(io::Error::last_os_error().into());
+        }
+
+        match unsafe { libc::fcntl(tty.as_raw_fd(), libc::F_SETFL, flags | libc::O_NONBLOCK) } {
+            0 => Ok(TTYPort { inner: tty }),
+            _ => Err(io::Error::last_os_error().into()),
+        }
     }
 }
 
@@ -405,7 +399,7 @@ macro_rules! uninterruptibly {
     }};
 }
 
-impl Read for Serial {
+impl Read for TTYPort {
     fn read(&mut self, bytes: &mut [u8]) -> io::Result<usize> {
         uninterruptibly!(match unsafe {
             libc::read(
@@ -420,7 +414,7 @@ impl Read for Serial {
     }
 }
 
-impl Write for Serial {
+impl Write for TTYPort {
     fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
         uninterruptibly!(match unsafe {
             libc::write(
@@ -444,7 +438,7 @@ impl Write for Serial {
     }
 }
 
-impl<'a> Read for &'a Serial {
+impl<'a> Read for &'a TTYPort {
     fn read(&mut self, bytes: &mut [u8]) -> io::Result<usize> {
         uninterruptibly!(match unsafe {
             libc::read(
@@ -459,7 +453,7 @@ impl<'a> Read for &'a Serial {
     }
 }
 
-impl<'a> Write for &'a Serial {
+impl<'a> Write for &'a TTYPort {
     fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
         uninterruptibly!(match unsafe {
             libc::write(
@@ -483,47 +477,21 @@ impl<'a> Write for &'a Serial {
     }
 }
 
-impl AsRawFd for Serial {
+impl AsRawFd for TTYPort {
     fn as_raw_fd(&self) -> RawFd {
         self.inner.as_raw_fd()
     }
 }
 
-impl IntoRawFd for Serial {
+impl IntoRawFd for TTYPort {
     fn into_raw_fd(self) -> RawFd {
         self.inner.into_raw_fd()
     }
 }
 
-impl FromRawFd for Serial {
+impl FromRawFd for TTYPort {
     unsafe fn from_raw_fd(fd: RawFd) -> Self {
-        let port = TTYPort::from_raw_fd(fd);
-        Serial { inner: port }
-    }
-}
-
-impl Evented for Serial {
-    fn register(
-        &self,
-        poll: &Poll,
-        token: Token,
-        interest: Ready,
-        opts: PollOpt,
-    ) -> io::Result<()> {
-        EventedFd(&self.as_raw_fd()).register(poll, token, interest, opts)
-    }
-
-    fn reregister(
-        &self,
-        poll: &Poll,
-        token: Token,
-        interest: Ready,
-        opts: PollOpt,
-    ) -> io::Result<()> {
-        EventedFd(&self.as_raw_fd()).reregister(poll, token, interest, opts)
-    }
-
-    fn deregister(&self, poll: &Poll) -> io::Result<()> {
-        EventedFd(&self.as_raw_fd()).deregister(poll)
+        let port = serialport::TTYPort::from_raw_fd(fd);
+        TTYPort { inner: port }
     }
 }
