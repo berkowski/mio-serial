@@ -6,11 +6,15 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [4.0.0] UNRELEASED
+This is a major update crossing two API-breaking dependency version jumps in `mio` and
+`serialport-rs`.
 
 ### BREAKING CHANGES
 This release contains multiple API breaking changes with the move to [serialport-rs](https://gitlab.com/sussurrrus/serialport-rs) v4.
 Specifically:
 
+* Renamed `mio-serial::windows::Serial` to `mio-serial::windows::COMPort`
+* Removed `COMPort::from_path`, use `COMPort::open`
 * Renamed `mio-serial::unix::Serial` to `mio-serial::unix::TTYPort`
 * Removed `TTYPort::from_path`, use `TTYPort::open`
 * Removed `TTYPort::from_serial`.  Replaced with impl of `std::convert::TryFrom<serialport::TTYPort>`
@@ -22,6 +26,13 @@ Specifically:
 * Bumped [mio](https://github.com/tokio-rs/mio) to 0.7
 * Bumped [serialport-rs](https://gitlab.com/sussurrrus/serialport-rs) to 4.0.0
 * Changed CHANGELOG from asciidoc to markdown
+
+### Added
+* MioSerialPort for platform independent serial port like `serialport::SerialPort`
+* SerialPortBuilderExt extension trait to add `open_async` and `open_native_async` methods
+  to `serialport::SerialPortBuilder` much like the already existing `open` and `open_native`
+  methods
+* The platform dependent serial ports `TTYPort` and `COMPort` are re-exposed in the crate root.
 
 ## [3.3.1] 2020-03-15
 ### Added
