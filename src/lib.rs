@@ -45,4 +45,4 @@ pub mod windows;
 pub use unix::TTYPort;
 
 #[cfg(windows)]
-pub use windows::Serial;
+pub use windows::COMPort;

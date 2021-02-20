@@ -1,13 +1,10 @@
 //! Windows impl of mio-enabled serial ports.
-use mio::{Evented, Poll, PollOpt, Ready, Token};
-use mio_named_pipes::NamedPipe;
-use serialport::prelude::*;
-use serialport::windows::COMPort;
+use mio::{windows::NamedPipe, Interest, Registry, Token, event::Source};
 use std::ffi::OsStr;
 use std::io::{self, Read, Write};
 use std::mem;
 use std::os::windows::ffi::OsStrExt;
-use std::os::windows::io::{AsRawHandle, FromRawHandle, RawHandle};
+use std::os::windows::io::{FromRawHandle, RawHandle};
 use std::path::Path;
 use std::ptr;
 use std::time::Duration;
@@ -17,25 +14,43 @@ use winapi::um::handleapi::INVALID_HANDLE_VALUE;
 use winapi::um::winbase::{COMMTIMEOUTS, FILE_FLAG_OVERLAPPED};
 use winapi::um::winnt::{FILE_ATTRIBUTE_NORMAL, GENERIC_READ, GENERIC_WRITE, HANDLE};
 
+use crate::SerialPort;
+
 /// Windows serial port
 #[derive(Debug)]
-pub struct Serial {
-    inner: COMPort,
+pub struct COMPort {
+    inner: serialport::COMPort,
     pipe: NamedPipe,
 }
 
-impl Serial {
+impl COMPort {
     /// Opens a COM port at the specified path
-    pub fn from_path<T: AsRef<Path>>(path: T, settings: &SerialPortSettings) -> io::Result<Self> {
-        let mut name = Vec::<u16>::new();
+    pub fn open(builder: &crate::SerialPortBuilder) -> crate::Result<COMPort> {
+        let (path, baud, parity, data_bits, stop_bits, flow_control) = {
+            let com_port = serialport::COMPort::open(builder)?;
+            let name = com_port.name().ok_or(crate::Error::new(
+                crate::ErrorKind::NoDevice,
+                "Empty device name",
+            ))?;
+            let baud = com_port.baud_rate()?;
+            let parity = com_port.parity()?;
+            let data_bits = com_port.data_bits()?;
+            let stop_bits = com_port.stop_bits()?;
+            let flow_control = com_port.flow_control()?;
 
-        name.extend(OsStr::new("\\\\.\\").encode_wide());
-        name.extend(path.as_ref().as_os_str().encode_wide());
-        name.push(0);
+            let mut path = Vec::<u16>::new();
+            path.extend(OsStr::new("\\\\.\\").encode_wide());
+            path.extend(Path::new(&name).as_os_str().encode_wide());
+            path.push(0);
+
+            (path, baud, parity, data_bits, stop_bits, flow_control)
+        };
+
+
 
         let handle = unsafe {
             CreateFileW(
-                name.as_ptr(),
+                path.as_ptr(),
                 GENERIC_READ | GENERIC_WRITE,
                 0,
                 ptr::null_mut(),
@@ -45,30 +60,34 @@ impl Serial {
             )
         };
 
-        if handle != INVALID_HANDLE_VALUE {
-            let handle = unsafe { mem::transmute(handle) };
-
-            // Construct NamedPipe and COMPort from Handle
-            let pipe = unsafe { NamedPipe::from_raw_handle(handle) };
-            let mut serial = unsafe { COMPort::from_raw_handle(handle) };
-            serial.set_all(settings)?;
-            override_comm_timeouts(handle)?;
-
-            Ok(Serial {
-                inner: serial,
-                pipe: pipe,
-            })
-        } else {
-            Err(io::Error::last_os_error())
+        if handle == INVALID_HANDLE_VALUE {
+            return Err(
+                crate::Error::from(
+                io::Error::last_os_error()
+                )
+            );
         }
+        let handle = unsafe { mem::transmute(handle) };
+
+        // Construct NamedPipe and COMPort from Handle
+        let pipe = unsafe { NamedPipe::from_raw_handle(handle) };
+        let mut com_port = unsafe { serialport::COMPort::from_raw_handle(handle) };
+
+        com_port.set_baud_rate(baud)?;
+        com_port.set_parity(parity)?;
+        com_port.set_data_bits(data_bits)?;
+        com_port.set_stop_bits(stop_bits)?;
+        com_port.set_flow_control(flow_control)?;
+        override_comm_timeouts(handle)?;
+
+        Ok(Self {
+            inner: com_port,
+            pipe: pipe,
+        })
     }
 }
 
-impl SerialPort for Serial {
-    /// Returns a struct with the current port settings
-    fn settings(&self) -> SerialPortSettings {
-        self.inner.settings()
-    }
+impl crate::SerialPort for COMPort {
 
     /// Return the name associated with the serial port, if known.
     fn name(&self) -> Option<String> {
@@ -90,7 +109,7 @@ impl SerialPort for Serial {
     /// if the hardware is in an uninitialized state or is using a non-standard character size.
     /// Setting a baud rate with `set_char_size()` should initialize the character size to a
     /// supported value.
-    fn data_bits(&self) -> crate::Result<DataBits> {
+    fn data_bits(&self) -> crate::Result<crate::DataBits> {
         self.inner.data_bits()
     }
 
@@ -100,7 +119,7 @@ impl SerialPort for Serial {
     /// occur if the hardware is in an uninitialized state or is using an unsupported flow control
     /// mode. Setting a flow control mode with `set_flow_control()` should initialize the flow
     /// control mode to a supported value.
-    fn flow_control(&self) -> crate::Result<FlowControl> {
+    fn flow_control(&self) -> crate::Result<crate::FlowControl> {
         self.inner.flow_control()
     }
 
@@ -109,7 +128,7 @@ impl SerialPort for Serial {
     /// This function returns `None` if the parity mode could not be determined. This may occur if
     /// the hardware is in an uninitialized state or is using a non-standard parity mode. Setting
     /// a parity mode with `set_parity()` should initialize the parity mode to a supported value.
-    fn parity(&self) -> crate::Result<Parity> {
+    fn parity(&self) -> crate::Result<crate::Parity> {
         self.inner.parity()
     }
 
@@ -119,7 +138,7 @@ impl SerialPort for Serial {
     /// occur if the hardware is in an uninitialized state or is using an unsupported stop bit
     /// configuration. Setting the number of stop bits with `set_stop-bits()` should initialize the
     /// stop bits to a supported value.
-    fn stop_bits(&self) -> crate::Result<StopBits> {
+    fn stop_bits(&self) -> crate::Result<crate::StopBits> {
         self.inner.stop_bits()
     }
 
@@ -133,11 +152,11 @@ impl SerialPort for Serial {
     /// Applies all settings for a struct. This isn't guaranteed to involve only
     /// a single call into the driver, though that may be done on some
     /// platforms.
-    fn set_all(&mut self, settings: &SerialPortSettings) -> crate::Result<()> {
-        self.inner.set_all(settings)?;
-        override_comm_timeouts(self.inner.as_raw_handle())?;
-        Ok(())
-    }
+    // fn set_all(&mut self, settings: &SerialPortSettings) -> crate::Result<()> {
+    //     self.inner.set_all(settings)?;
+    //     override_comm_timeouts(self.inner.as_raw_handle())?;
+    //     Ok(())
+    // }
 
     /// Sets the baud rate.
     ///
@@ -151,22 +170,22 @@ impl SerialPort for Serial {
     }
 
     /// Sets the character size.
-    fn set_data_bits(&mut self, data_bits: DataBits) -> crate::Result<()> {
+    fn set_data_bits(&mut self, data_bits: crate::DataBits) -> crate::Result<()> {
         self.inner.set_data_bits(data_bits)
     }
 
     /// Sets the flow control mode.
-    fn set_flow_control(&mut self, flow_control: FlowControl) -> crate::Result<()> {
+    fn set_flow_control(&mut self, flow_control: crate::FlowControl) -> crate::Result<()> {
         self.inner.set_flow_control(flow_control)
     }
 
     /// Sets the parity-checking mode.
-    fn set_parity(&mut self, parity: Parity) -> crate::Result<()> {
+    fn set_parity(&mut self, parity: crate::Parity) -> crate::Result<()> {
         self.inner.set_parity(parity)
     }
 
     /// Sets the number of stop bits.
-    fn set_stop_bits(&mut self, stop_bits: StopBits) -> crate::Result<()> {
+    fn set_stop_bits(&mut self, stop_bits: crate::StopBits) -> crate::Result<()> {
         self.inner.set_stop_bits(stop_bits)
     }
 
@@ -302,7 +321,7 @@ impl SerialPort for Serial {
     ///
     /// * `NoDevice` if the device was disconnected.
     /// * `Io` for any other type of I/O error.
-    fn clear(&self, buffer_to_clear: ClearBuffer) -> crate::Result<()> {
+    fn clear(&self, buffer_to_clear: serialport::ClearBuffer) -> crate::Result<()> {
         self.inner.clear(buffer_to_clear)
     }
 
@@ -320,18 +339,28 @@ impl SerialPort for Serial {
     /// # Errors
     ///
     /// This function returns an error if the serial port couldn't be cloned.
-    fn try_clone(&self) -> crate::Result<Box<dyn SerialPort>> {
+    fn try_clone(&self) -> crate::Result<Box<dyn crate::SerialPort>> {
         self.inner.try_clone()
+    }
+
+    #[inline(always)]
+    fn set_break(&self) -> crate::Result<()> {
+        self.inner.set_break()
+    }
+
+    #[inline(always)]
+    fn clear_break(&self) -> crate::Result<()> {
+        self.inner.clear_break()
     }
 }
 
-impl Read for Serial {
+impl Read for COMPort {
     fn read(&mut self, bytes: &mut [u8]) -> io::Result<usize> {
         self.pipe.read(bytes)
     }
 }
 
-impl Write for Serial {
+impl Write for COMPort {
     fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
         self.pipe.write(bytes)
     }
@@ -341,29 +370,28 @@ impl Write for Serial {
     }
 }
 
-impl Evented for Serial {
+impl Source for COMPort {
     fn register(
-        &self,
-        poll: &Poll,
+        &mut self,
+        registry: &Registry,
         token: Token,
-        interest: Ready,
-        opts: PollOpt,
+        interest: Interest,
     ) -> io::Result<()> {
-        self.pipe.register(poll, token, interest, opts)
+        self.pipe.register(registry, token, interest)
     }
 
     fn reregister(
-        &self,
-        poll: &Poll,
+        &mut self,
+        registry: &Registry,
         token: Token,
-        interest: Ready,
-        opts: PollOpt,
+        interest: Interest,
     ) -> io::Result<()> {
-        self.pipe.reregister(poll, token, interest, opts)
+
+        self.pipe.reregister(registry, token, interest)
     }
 
-    fn deregister(&self, poll: &Poll) -> io::Result<()> {
-        self.pipe.deregister(poll)
+    fn deregister(&mut self, registry: &Registry) -> io::Result<()> {
+        self.pipe.deregister(registry)
     }
 }
 
