@@ -1,5 +1,5 @@
 //! Windows impl of mio-enabled serial ports.
-use mio::{windows::NamedPipe, Interest, Registry, Token, event::Source};
+use mio::{event::Source, windows::NamedPipe, Interest, Registry, Token};
 use std::ffi::OsStr;
 use std::io::{self, Read, Write};
 use std::mem;
@@ -46,8 +46,6 @@ impl COMPort {
             (path, baud, parity, data_bits, stop_bits, flow_control)
         };
 
-
-
         let handle = unsafe {
             CreateFileW(
                 path.as_ptr(),
@@ -61,11 +59,7 @@ impl COMPort {
         };
 
         if handle == INVALID_HANDLE_VALUE {
-            return Err(
-                crate::Error::from(
-                io::Error::last_os_error()
-                )
-            );
+            return Err(crate::Error::from(io::Error::last_os_error()));
         }
         let handle = unsafe { mem::transmute(handle) };
 
@@ -88,7 +82,6 @@ impl COMPort {
 }
 
 impl crate::SerialPort for COMPort {
-
     /// Return the name associated with the serial port, if known.
     fn name(&self) -> Option<String> {
         self.inner.name()
@@ -386,7 +379,6 @@ impl Source for COMPort {
         token: Token,
         interest: Interest,
     ) -> io::Result<()> {
-
         self.pipe.reregister(registry, token, interest)
     }
 

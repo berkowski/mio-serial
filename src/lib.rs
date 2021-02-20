@@ -10,7 +10,7 @@
 #![deny(missing_docs)]
 #![warn(rust_2018_idioms)]
 
-use mio::{Registry, Interest, Token};
+use mio::{Interest, Registry, Token};
 
 // Enums, Structs, and Traits from the serialport crate
 pub use serialport::{
@@ -73,7 +73,6 @@ pub trait SerialPortBuilderExt {
 impl SerialPortBuilderExt for SerialPortBuilder {
     /// Open a cross-platform interface to the port with the specified settings
     fn open_async(self) -> Result<Box<dyn MioSerialPort>> {
-
         #[cfg(unix)]
         return TTYPort::open(&self).map(|p| Box::new(p) as Box<dyn SerialPort>);
 
@@ -123,7 +122,6 @@ impl mio::event::Source for dyn MioSerialPort {
         token: Token,
         interest: Interest,
     ) -> std::io::Result<()> {
-
         self.source_mut().reregister(registry, token, interest)
     }
 
@@ -132,7 +130,7 @@ impl mio::event::Source for dyn MioSerialPort {
     }
 }
 mod private {
-    pub trait Sealed{}
+    pub trait Sealed {}
     #[cfg(unix)]
     impl Sealed for crate::TTYPort {}
 
