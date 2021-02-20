@@ -15,18 +15,18 @@ pub use serialport::{
     // Enums
     ClearBuffer,
     DataBits,
-    StopBits,
     // Structs
     Error,
     ErrorKind,
     FlowControl,
     Parity,
-    SerialPortInfo,
-    SerialPortBuilder,
+    // Types
+    Result,
     // Traits
     SerialPort,
-    // Types
-    Result
+    SerialPortBuilder,
+    SerialPortInfo,
+    StopBits,
 };
 
 // Re-export port-enumerating utility function.
@@ -46,4 +46,3 @@ pub use unix::TTYPort;
 
 #[cfg(windows)]
 pub use windows::Serial;
-

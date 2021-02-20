@@ -1,14 +1,14 @@
 //! Unix impl of mio-enabled serial ports.
+use std::convert::TryFrom;
 use std::io::{self, Read, Write};
 use std::os::unix::prelude::*;
 use std::time::Duration;
-use std::convert::TryFrom;
 
 use nix::sys::termios::{self, SetArg, SpecialCharacterIndices};
 use nix::{self, libc};
 
 use mio::unix::SourceFd;
-use mio::{Registry, Token, Interest, event::Source};
+use mio::{event::Source, Interest, Registry, Token};
 
 /// *nix serial port using termios
 #[derive(Debug)]
@@ -87,7 +87,6 @@ impl TTYPort {
 }
 
 impl crate::SerialPort for TTYPort {
-
     /// Start transmitting a break
     #[inline(always)]
     fn set_break(&self) -> crate::Result<()> {
@@ -371,7 +370,6 @@ impl crate::SerialPort for TTYPort {
 impl TryFrom<serialport::TTYPort> for TTYPort {
     type Error = crate::Error;
     fn try_from(tty: serialport::TTYPort) -> Result<Self, Self::Error> {
-
         let mut t = termios::tcgetattr(tty.as_raw_fd()).map_err(map_nix_error)?;
 
         // Set VMIN = 1 to block until at least one character is received.
@@ -500,7 +498,6 @@ impl FromRawFd for TTYPort {
 }
 
 impl Source for TTYPort {
-
     #[inline(always)]
     fn register(
         &mut self,
