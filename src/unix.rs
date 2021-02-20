@@ -7,6 +7,9 @@ use std::convert::TryFrom;
 use nix::sys::termios::{self, SetArg, SpecialCharacterIndices};
 use nix::{self, libc};
 
+use mio::unix::SourceFd;
+use mio::{Registry, Token, Interest, event::Source};
+
 /// *nix serial port using termios
 #[derive(Debug)]
 pub struct TTYPort {
@@ -493,5 +496,33 @@ impl FromRawFd for TTYPort {
     unsafe fn from_raw_fd(fd: RawFd) -> Self {
         let port = serialport::TTYPort::from_raw_fd(fd);
         TTYPort { inner: port }
+    }
+}
+
+impl Source for TTYPort {
+
+    #[inline(always)]
+    fn register(
+        &mut self,
+        registry: &Registry,
+        token: Token,
+        interests: Interest,
+    ) -> io::Result<()> {
+        SourceFd(&self.as_raw_fd()).register(registry, token, interests)
+    }
+
+    #[inline(always)]
+    fn reregister(
+        &mut self,
+        registry: &Registry,
+        token: Token,
+        interests: Interest,
+    ) -> io::Result<()> {
+        SourceFd(&self.as_raw_fd()).reregister(registry, token, interests)
+    }
+
+    #[inline(always)]
+    fn deregister(&mut self, registry: &Registry) -> io::Result<()> {
+        SourceFd(&self.as_raw_fd()).deregister(registry)
     }
 }

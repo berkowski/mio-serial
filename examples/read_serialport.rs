@@ -2,7 +2,7 @@
 extern crate mio;
 extern crate mio_serial;
 
-use mio::{Events, Interest, Poll, Token, io_source::IoSource};
+use mio::{Events, Interest, Poll, Token};
 
 use std::env;
 use std::io;
@@ -32,7 +32,7 @@ pub fn main() -> io::Result<()> {
     // Create the serial port
     println!("Opening {} at 9600,8N1", path);
     let builder = mio_serial::new(path, DEFAULT_BAUD);
-    let mut rx = IoSource::new(mio_serial::TTYPort::open(&builder)?);
+    let mut rx = mio_serial::TTYPort::open(&builder)?;
 
     poll.registry()
         .register(&mut rx, SERIAL_TOKEN, Interest::READABLE)

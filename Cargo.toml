@@ -19,12 +19,12 @@ travis-ci = { repository = "berkowski/mio-serial", service = "github" }
 [features]
 default = []
 libudev = ["serialport/libudev"]
-os-poll = ["mio/os-poll"]
-os-ext = ["mio/os-ext"]
+# os-poll = ["mio/os-poll"]
+# os-ext = ["mio/os-ext"]
 
 [dependencies.mio]
-version = "0.8"
-# features = ["os-poll", "os-ext"]
+version = "0.7"
+features = ["os-poll", "os-ext"]
 
 [dependencies.serialport]
 version = "4"
@@ -39,6 +39,6 @@ mio-named-pipes = "0.1.5"
 
 [[example]]
 name = "read_serialport"
-required-features = ["os-poll", "os-ext"]
-[patch.crates-io]
-mio = {git = "https://github.com/berkowski/mio", branch="public-iosource"}
+# required-features = ["os-poll", "os-ext"]
+# [patch.crates-io]
+# mio = {git = "https://github.com/berkowski/mio", branch="public-iosource"}
