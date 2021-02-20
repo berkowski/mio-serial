@@ -415,3 +415,14 @@ fn override_comm_timeouts(handle: RawHandle) -> io::Result<()> {
     }
     Ok(())
 }
+
+impl crate::MioSerialPort for COMPort {
+    #[inline(always)]
+    fn source(&self) -> &dyn mio::event::Source {
+        &self.pipe
+    }
+    #[inline(always)]
+    fn source_mut(&mut self) -> &mut dyn mio::event::Source {
+        &mut self.pipe
+    }
+}

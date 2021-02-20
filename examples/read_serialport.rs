@@ -9,6 +9,8 @@ use std::io;
 use std::io::Read;
 use std::str;
 
+use mio_serial::SerialPortBuilderExt;
+
 const SERIAL_TOKEN: Token = Token(0);
 
 #[cfg(unix)]
@@ -31,11 +33,12 @@ pub fn main() -> io::Result<()> {
 
     // Create the serial port
     println!("Opening {} at 9600,8N1", path);
-    let builder = mio_serial::new(path, DEFAULT_BAUD);
-    #[cfg(unix)]
-    let mut rx = mio_serial::TTYPort::open(&builder)?;
-    #[cfg(windows)]
-    let mut rx = mio_serial::COMPort::open(&builder)?;
+    let mut rx = mio_serial::new(path, DEFAULT_BAUD).open_async()?;
+
+    // #[cfg(unix)]
+    // let mut rx = mio_serial::TTYPort::open(&builder)?;
+    // #[cfg(windows)]
+    // let mut rx = mio_serial::COMPort::open(&builder)?;
 
     poll.registry()
         .register(&mut rx, SERIAL_TOKEN, Interest::READABLE)

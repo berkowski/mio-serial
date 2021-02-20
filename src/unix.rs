@@ -523,3 +523,13 @@ impl Source for TTYPort {
         SourceFd(&self.as_raw_fd()).deregister(registry)
     }
 }
+impl crate::MioSerialPort for TTYPort {
+    #[inline(always)]
+    fn source(&self) -> &dyn mio::event::Source {
+        &self.inner
+    }
+    #[inline(always)]
+    fn source_mut(&mut self) -> &mut dyn mio::event::Source {
+        &mut self.inner
+    }
+}
