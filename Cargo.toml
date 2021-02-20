@@ -1,6 +1,6 @@
 [package]
 name = "mio-serial"
-version = "3.3.1"
+version = "4.0.0"
 authors = ["Zac Berkowitz <zac.berkowitz@gmail.com>"]
 description = "A serial port implementation for mio"
 license = "MIT"
@@ -17,16 +17,16 @@ appveyor = { repository = "berkowski/mio-serial", service = "github" }
 travis-ci = { repository = "berkowski/mio-serial", service = "github" }
 
 [features]
-default = ["libudev"]
+default = []
 
 libudev = ["serialport/libudev"]
 
 [dependencies]
-mio = "^0.6"
-serialport = { version = "~3.3", default-features = false }
+mio = "0.7"
+serialport = { version = "4", default-features = false }
 
 [target.'cfg(unix)'.dependencies]
-nix = "^0.17"
+nix = "0.19"
 
 [target.'cfg(windows)'.dependencies]
 winapi = { version = "0.3", features = ["commapi", "handleapi", "winbase"] }
