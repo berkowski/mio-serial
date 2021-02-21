@@ -526,10 +526,10 @@ impl Source for TTYPort {
 impl crate::MioSerialPort for TTYPort {
     #[inline(always)]
     fn source(&self) -> &dyn mio::event::Source {
-        &self.inner
+        self
     }
     #[inline(always)]
     fn source_mut(&mut self) -> &mut dyn mio::event::Source {
-        &mut self.inner
+        self
     }
 }

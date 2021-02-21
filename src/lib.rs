@@ -74,7 +74,7 @@ impl SerialPortBuilderExt for SerialPortBuilder {
     /// Open a cross-platform interface to the port with the specified settings
     fn open_async(self) -> Result<Box<dyn MioSerialPort>> {
         #[cfg(unix)]
-        return TTYPort::open(&self).map(|p| Box::new(p) as Box<dyn SerialPort>);
+        return TTYPort::open(&self).map(|p| Box::new(p) as Box<dyn MioSerialPort>);
 
         #[cfg(windows)]
         return COMPort::open(&self).map(|p| Box::new(p) as Box<dyn MioSerialPort>);
