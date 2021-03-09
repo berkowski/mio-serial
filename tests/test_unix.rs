@@ -4,12 +4,13 @@
 extern crate mio_serial;
 extern crate serialport;
 
+use std::convert::TryFrom;
 use std::io::{Read, Write};
 use std::os::unix::prelude::*;
 use std::path::Path;
 use std::str;
 
-use mio_serial::unix::Serial;
+use mio_serial::SerialStream;
 
 fn get_available_serialport_name() -> Option<String> {
     match mio_serial::available_ports() {
@@ -19,35 +20,20 @@ fn get_available_serialport_name() -> Option<String> {
 }
 
 #[test]
-#[ignore]
-fn test_from_path() {
-    let tty_path = get_available_serialport_name().expect("No available serial ports.");
-
-    let serial = Serial::from_path(&tty_path, &mio_serial::SerialPortSettings::default())
-        .expect(&format!("Unable to open serial port: {}", &tty_path));
-
-    assert!(serial.as_raw_fd() > 0, "Illegal file descriptor.");
-}
-
-#[test]
-#[ignore]
 fn test_from_serial() {
-    let tty_path = get_available_serialport_name().expect("No available serial ports.");
+    if let Some(tty_path) = get_available_serialport_name() {
+        let port = mio_serial::new(tty_path.clone(), 9600)
+            .open_native()
+            .expect(&format!("Unable to open serial port: {}", tty_path));
+        let stream = mio_serial::SerialStream::try_from(port).expect("Unable to wrap TTYPort.");
 
-    let tty_port = serialport::posix::TTYPort::open(
-        Path::new(&tty_path),
-        &mio_serial::SerialPortSettings::default(),
-    )
-    .expect(&format!("Unable to open serial port: {}", &tty_path));
-
-    let serial = Serial::from_serial(tty_port).expect("Unable to wrap TTYPort.");
-
-    assert!(serial.as_raw_fd() > 0, "Illegal file descriptor.");
+        assert!(stream.as_raw_fd() > 0, "Illegal file descriptor.");
+    }
 }
 
 #[test]
 fn test_serial_pair() {
-    let (mut master, mut slave) = Serial::pair().expect("Unable to create ptty pair");
+    let (mut master, mut slave) = SerialStream::pair().expect("Unable to create ptty pair");
 
     // Test file descriptors.
     assert!(

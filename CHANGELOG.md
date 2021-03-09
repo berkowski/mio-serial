@@ -11,12 +11,15 @@ This is a major update crossing two API-breaking dependency version jumps in `mi
 
 ### BREAKING CHANGES
 This release contains multiple API breaking changes with the move to [serialport-rs](https://gitlab.com/sussurrrus/serialport-rs) v4.
+Additional breaking changes were made to make the API more like mio/tokio where platform-specific
+implimentation details are provided with `#cfg[]` guards instead of discrete structures like in `serialport-rs`
+
 Specifically:
 
-* Renamed `mio-serial::windows::Serial` to `mio-serial::windows::COMPort`
-* Removed `COMPort::from_path`, use `COMPort::open`
-* Renamed `mio-serial::unix::Serial` to `mio-serial::unix::TTYPort`
-* Removed `TTYPort::from_path`, use `TTYPort::open`
+* Removed platform-specific `mio_serial::windows::Serial` and `mio_serial::unix::Serial`
+* Added `mio_serial::SerialStream` with platform platform specific requirements at compile time with `#[cfg()]`
+* Removed `COMPort::from_path`, use `SerialStream::open`
+* Removed `TTYPort::from_path`, use `SerialStream::open`
 * Removed `TTYPort::from_serial`.  Replaced with impl of `std::convert::TryFrom<serialport::TTYPort>`
 * Removed `SerialPortSettings`, `serialport-rs` now uses the builder pattern
 
@@ -28,11 +31,9 @@ Specifically:
 * Changed CHANGELOG from asciidoc to markdown
 
 ### Added
-* MioSerialPort for platform independent serial port like `serialport::SerialPort`
-* SerialPortBuilderExt extension trait to add `open_async` and `open_native_async` methods
-  to `serialport::SerialPortBuilder` much like the already existing `open` and `open_native`
-  methods
-* The platform dependent serial ports `TTYPort` and `COMPort` are re-exposed in the crate root.
+* `SerialStream` structure as the common entry point for serial port IO.
+* `SerialPortBuilderExt` extension trait to add `open_async` method
+  to `serialport::SerialPortBuilder` much like the already existing `open` method.
 
 ## [3.3.1] 2020-03-15
 ### Added
