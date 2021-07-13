@@ -1,7 +1,7 @@
 image:
-  - Visual Studio 2019
   - Ubuntu
   - macOS
+  - Visual Studio 2019
 
 ## Build Matrix ##
 
@@ -45,11 +45,13 @@ environment:
 # default-toolchain and default-host manually here.
 install:
   - cmd: appveyor DownloadFile https://win.rustup.rs/ -FileName rustup-init.exe
-  - cmd: rustup-init -yv --default-toolchain %channel% --default-host %target%
+  - cmd: rustup-init -yv --default-toolchain %channel%
   - cmd: set PATH=%PATH%;%USERPROFILE%\.cargo\bin
-  - sh: curl -sSf -o rustup-init.exe https://win.rustup.rs/
-  - sh: rustup-init.exe -y --default-host %TARGET% --default-toolchain %RUST_VERSION%
-  - sh: set PATH=%PATH%;C:\Users\appveyor\.cargo\bin
+  - sh: curl --proto '=https' --tlsv1.2 -sSf -o rustup-init https://sh.rustup.rs
+  - sh: chmod u+x rustup-init
+  - sh: ./rustup-init -y --default-toolchain ${channel}
+  - sh: source $HOME/.cargo/env
+  #- sh: export PATH=${PATH};${HOME}/.cargo/bin
   - rustc -vV
   - cargo -vV
 
