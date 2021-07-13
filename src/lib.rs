@@ -178,7 +178,7 @@ impl SerialStream {
     /// ## Examples
     ///
     /// ```
-    /// use tokio_serial::SerialStream;
+    /// use mio_serial::SerialStream;
     ///
     /// let (master, slave) = SerialStream::pair().unwrap();
     /// ```
