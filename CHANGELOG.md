@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
-## [4.0.0] UNRELEASED
+## [4.0.0-beta1] UNRELEASED
 This is a major update crossing two API-breaking dependency version jumps in `mio` and
 `serialport-rs`.
 
@@ -25,7 +25,7 @@ Specifically:
 
 ### Changed
 * Removed "libudev" from the default features.  Still available for use when desired.
-* Bumped [nix](https://github.com/nix-rust/nix) to 0.19
+* Bumped [nix](https://github.com/nix-rust/nix) to 0.22
 * Bumped [mio](https://github.com/tokio-rs/mio) to 0.7
 * Bumped [serialport-rs](https://gitlab.com/sussurrrus/serialport-rs) to 4.0.0
 * Changed CHANGELOG from asciidoc to markdown
