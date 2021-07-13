@@ -579,12 +579,9 @@ mod io {
         }
 
         fn flush(&mut self) -> StdIoResult<()> {
-            uninterruptibly!(termios::tcdrain(self.inner.as_raw_fd()).map_err(
-                |error| match error {
-                    nix::Error::Sys(errno) => StdIoError::from(errno),
-                    error => StdIoError::new(StdIoErrorKind::Other, error.to_string()),
-                }
-            ))
+            uninterruptibly!(
+                termios::tcdrain(self.inner.as_raw_fd()).map_err(|e| StdIoError::from(e))
+            )
         }
     }
 
@@ -618,12 +615,9 @@ mod io {
         }
 
         fn flush(&mut self) -> StdIoResult<()> {
-            uninterruptibly!(termios::tcdrain(self.inner.as_raw_fd()).map_err(
-                |error| match error {
-                    nix::Error::Sys(errno) => StdIoError::from(errno),
-                    error => StdIoError::new(StdIoErrorKind::Other, error.to_string()),
-                }
-            ))
+            uninterruptibly!(
+                termios::tcdrain(self.inner.as_raw_fd()).map_err(|e| StdIoError::from(e))
+            )
         }
     }
 }

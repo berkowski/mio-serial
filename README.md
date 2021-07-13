@@ -6,6 +6,10 @@
 
 mio-serial provides a serial port implementation using [mio](https://github.com/carllerche/mio).
 
+## NOTICE
+This crate is no longer actively maintained (see [#25](https://github.com/berkowski/mio-serial/issues/25)) and is
+open for adoption.  Create an issue if interested.
+
 ## Usage
 
 Add `mio-serial` to you `Cargo.toml`:
