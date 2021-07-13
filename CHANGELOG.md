@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
-## [4.0.0-beta1] UNRELEASED
+## [4.0.0-beta1] 2021-07-13
 This is a major update crossing two API-breaking dependency version jumps in `mio` and
 `serialport-rs`.
 
