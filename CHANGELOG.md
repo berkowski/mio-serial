@@ -35,6 +35,10 @@ Specifically:
 * `SerialPortBuilderExt` extension trait to add `open_async` method
   to `serialport::SerialPortBuilder` much like the already existing `open` method.
 
+### Other
+* Switched CI to appveyor for Windows, OSX, and Linux.  It doesn't test as many targets, but some checks are better
+  than none now that travis-ci is no longer an option.
+
 ## [3.3.1] 2020-03-15
 ### Added
 * @flosse added #derive Debug support for the Serial struct in [#20](https://github.com/berkowski/mio-serial/pull/20)
