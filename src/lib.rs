@@ -218,18 +218,6 @@ impl SerialStream {
 }
 
 impl crate::SerialPort for SerialStream {
-    /// Start transmitting a break
-    #[inline(always)]
-    fn set_break(&self) -> crate::Result<()> {
-        self.inner.set_break()
-    }
-
-    /// Stop transmitting a break
-    #[inline(always)]
-    fn clear_break(&self) -> crate::Result<()> {
-        self.inner.clear_break()
-    }
-
     /// Return the name associated with the serial port, if known.
     #[inline(always)]
     fn name(&self) -> Option<String> {
@@ -296,8 +284,6 @@ impl crate::SerialPort for SerialStream {
         Duration::from_secs(0)
     }
 
-    // Port settings setters
-
     /// Sets the baud rate.
     ///
     /// ## Errors
@@ -315,6 +301,8 @@ impl crate::SerialPort for SerialStream {
     fn set_data_bits(&mut self, data_bits: crate::DataBits) -> crate::Result<()> {
         self.inner.set_data_bits(data_bits)
     }
+
+    // Port settings setters
 
     /// Sets the flow control mode.
     #[inline(always)]
@@ -340,8 +328,6 @@ impl crate::SerialPort for SerialStream {
     fn set_timeout(&mut self, _: Duration) -> crate::Result<()> {
         Ok(())
     }
-
-    // Functions for setting non-data control signal pins
 
     /// Sets the state of the RTS (Request To Send) control signal.
     ///
@@ -375,7 +361,7 @@ impl crate::SerialPort for SerialStream {
         self.inner.write_data_terminal_ready(level)
     }
 
-    // Functions for reading additional pins
+    // Functions for setting non-data control signal pins
 
     /// Reads the state of the CTS (Clear To Send) control signal.
     ///
@@ -408,6 +394,8 @@ impl crate::SerialPort for SerialStream {
     fn read_data_set_ready(&mut self) -> crate::Result<bool> {
         self.inner.read_data_set_ready()
     }
+
+    // Functions for reading additional pins
 
     /// Reads the state of the Ring Indicator control signal.
     ///
@@ -499,6 +487,18 @@ impl crate::SerialPort for SerialStream {
             "SerialPort::try_clone not valid for SerialStream.",
         ))
         //self.inner.try_clone()
+    }
+
+    /// Start transmitting a break
+    #[inline(always)]
+    fn set_break(&self) -> crate::Result<()> {
+        self.inner.set_break()
+    }
+
+    /// Stop transmitting a break
+    #[inline(always)]
+    fn clear_break(&self) -> crate::Result<()> {
+        self.inner.clear_break()
     }
 }
 
