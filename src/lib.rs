@@ -78,7 +78,7 @@ pub struct SerialStream {
     #[cfg(unix)]
     inner: serialport::TTYPort,
     #[cfg(windows)]
-    inner: serialport::COMPort,
+    inner: mem::ManuallyDrop<serialport::COMPort>,
     #[cfg(windows)]
     pipe: NamedPipe,
 }
@@ -149,8 +149,17 @@ impl SerialStream {
             let handle = unsafe { mem::transmute(handle) };
 
             // Construct NamedPipe and COMPort from Handle
+            //
+            // We need both the NamedPipe for Read/Write and COMPort for serialport related
+            // actions.  Both are created using FromRawHandle which takes ownership of the
+            // handle which may case a double-free as both objects attempt to close the handle.
+            //
+            // Looking through the source for both NamedPipe and COMPort, NamedPipe does some
+            // cleanup in Drop while COMPort just closes the handle.
+            //
+            // We'll use a ManuallyDrop<T> for COMPort and defer cleanup to the NamedPipe
             let pipe = unsafe { NamedPipe::from_raw_handle(handle) };
-            let mut com_port = unsafe { serialport::COMPort::from_raw_handle(handle) };
+            let mut com_port = mem::ManuallyDrop::new(unsafe { serialport::COMPort::from_raw_handle(handle) });
 
             com_port.set_baud_rate(baud)?;
             com_port.set_parity(parity)?;
