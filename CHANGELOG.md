@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [4.0.0-beta2] UNRELEASED
 
+### Added
+- AsRawHandle, FromRawHandle, and IntoRawHandle impls for SerialStream on Windows
+
 ### Fixed
 - Potential double Drop issue on Windows between NamedPipe and COMPort
 

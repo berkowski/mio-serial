@@ -101,78 +101,11 @@ impl SerialStream {
     ///
     /// let path = "/dev/ttyUSB0";
     ///
-    /// let serial = TTYSerial::open(path, 9600).unwrap();
+    /// let serial = SerialStream::open(path, 9600).unwrap();
     /// ```
     pub fn open(builder: &crate::SerialPortBuilder) -> crate::Result<Self> {
-        #[cfg(unix)]
-        {
-            let port = NativeBlockingSerialPort::open(builder)?;
-            Self::try_from(port)
-        }
-        #[cfg(windows)]
-        {
-            let (path, baud, parity, data_bits, stop_bits, flow_control) = {
-                let com_port = serialport::COMPort::open(builder)?;
-                let name = com_port.name().ok_or(crate::Error::new(
-                    crate::ErrorKind::NoDevice,
-                    "Empty device name",
-                ))?;
-                let baud = com_port.baud_rate()?;
-                let parity = com_port.parity()?;
-                let data_bits = com_port.data_bits()?;
-                let stop_bits = com_port.stop_bits()?;
-                let flow_control = com_port.flow_control()?;
-
-                let mut path = Vec::<u16>::new();
-                path.extend(OsStr::new("\\\\.\\").encode_wide());
-                path.extend(Path::new(&name).as_os_str().encode_wide());
-                path.push(0);
-
-                (path, baud, parity, data_bits, stop_bits, flow_control)
-            };
-
-            let handle = unsafe {
-                CreateFileW(
-                    path.as_ptr(),
-                    GENERIC_READ | GENERIC_WRITE,
-                    0,
-                    ptr::null_mut(),
-                    OPEN_EXISTING,
-                    FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED,
-                    0 as HANDLE,
-                )
-            };
-
-            if handle == INVALID_HANDLE_VALUE {
-                return Err(crate::Error::from(StdIoError::last_os_error()));
-            }
-            let handle = unsafe { mem::transmute(handle) };
-
-            // Construct NamedPipe and COMPort from Handle
-            //
-            // We need both the NamedPipe for Read/Write and COMPort for serialport related
-            // actions.  Both are created using FromRawHandle which takes ownership of the
-            // handle which may case a double-free as both objects attempt to close the handle.
-            //
-            // Looking through the source for both NamedPipe and COMPort, NamedPipe does some
-            // cleanup in Drop while COMPort just closes the handle.
-            //
-            // We'll use a ManuallyDrop<T> for COMPort and defer cleanup to the NamedPipe
-            let pipe = unsafe { NamedPipe::from_raw_handle(handle) };
-            let mut com_port = mem::ManuallyDrop::new(unsafe { serialport::COMPort::from_raw_handle(handle) });
-
-            com_port.set_baud_rate(baud)?;
-            com_port.set_parity(parity)?;
-            com_port.set_data_bits(data_bits)?;
-            com_port.set_stop_bits(stop_bits)?;
-            com_port.set_flow_control(flow_control)?;
-            sys::override_comm_timeouts(handle)?;
-
-            Ok(Self {
-                inner: com_port,
-                pipe: pipe,
-            })
-        }
+        let port = NativeBlockingSerialPort::open(builder)?;
+        Self::try_from(port)
     }
 
     /// Create a pair of pseudo serial terminals
@@ -534,8 +467,67 @@ impl TryFrom<NativeBlockingSerialPort> for SerialStream {
         }
     }
     #[cfg(windows)]
-    fn try_from(_: NativeBlockingSerialPort) -> std::result::Result<Self, Self::Error> {
-        unimplemented!()
+    fn try_from(port: NativeBlockingSerialPort) -> std::result::Result<Self, Self::Error> {
+        let name = port.name().ok_or(crate::Error::new(
+            crate::ErrorKind::NoDevice,
+            "Empty device name",
+        ))?;
+        let baud = port.baud_rate()?;
+        let parity = port.parity()?;
+        let data_bits = port.data_bits()?;
+        let stop_bits = port.stop_bits()?;
+        let flow_control = port.flow_control()?;
+
+        let mut path = Vec::<u16>::new();
+        path.extend(OsStr::new("\\\\.\\").encode_wide());
+        path.extend(Path::new(&name).as_os_str().encode_wide());
+        path.push(0);
+
+        // Drop the port object, we'll reopen the file path as a raw handle
+        mem::drop(port);
+
+        let handle = unsafe {
+            CreateFileW(
+                path.as_ptr(),
+                GENERIC_READ | GENERIC_WRITE,
+                0,
+                ptr::null_mut(),
+                OPEN_EXISTING,
+                FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED,
+                0 as HANDLE,
+            )
+        };
+
+        if handle == INVALID_HANDLE_VALUE {
+            return Err(crate::Error::from(StdIoError::last_os_error()));
+        }
+        let handle = unsafe { mem::transmute(handle) };
+
+        // Construct NamedPipe and COMPort from Handle
+        //
+        // We need both the NamedPipe for Read/Write and COMPort for serialport related
+        // actions.  Both are created using FromRawHandle which takes ownership of the
+        // handle which may case a double-free as both objects attempt to close the handle.
+        //
+        // Looking through the source for both NamedPipe and COMPort, NamedPipe does some
+        // cleanup in Drop while COMPort just closes the handle.
+        //
+        // We'll use a ManuallyDrop<T> for COMPort and defer cleanup to the NamedPipe
+        let pipe = unsafe { NamedPipe::from_raw_handle(handle) };
+        let mut com_port =
+            mem::ManuallyDrop::new(unsafe { serialport::COMPort::from_raw_handle(handle) });
+
+        com_port.set_baud_rate(baud)?;
+        com_port.set_parity(parity)?;
+        com_port.set_data_bits(data_bits)?;
+        com_port.set_stop_bits(stop_bits)?;
+        com_port.set_flow_control(flow_control)?;
+        sys::override_comm_timeouts(handle)?;
+
+        Ok(Self {
+            inner: com_port,
+            pipe: pipe,
+        })
     }
 }
 
@@ -633,8 +625,12 @@ mod io {
 
 #[cfg(windows)]
 mod io {
-    use super::{SerialStream, StdIoResult};
+    use super::{NativeBlockingSerialPort, SerialStream, StdIoResult};
+    use crate::sys;
+    use mio::windows::NamedPipe;
     use std::io::{Read, Write};
+    use std::mem;
+    use std::os::windows::prelude::*;
 
     impl Read for SerialStream {
         fn read(&mut self, bytes: &mut [u8]) -> StdIoResult<usize> {
@@ -649,6 +645,33 @@ mod io {
 
         fn flush(&mut self) -> StdIoResult<()> {
             self.pipe.flush()
+        }
+    }
+
+    impl AsRawHandle for SerialStream {
+        fn as_raw_handle(&self) -> RawHandle {
+            self.pipe.as_raw_handle()
+        }
+    }
+
+    impl IntoRawHandle for SerialStream {
+        fn into_raw_handle(self) -> RawHandle {
+            // Since NamedPipe doesn't impl IntoRawHandle we'll use AsRawHandle and bypass
+            // NamedPipe's destructor to keep the handle in the current state
+            let manual = mem::ManuallyDrop::new(self.pipe);
+            manual.as_raw_handle()
+        }
+    }
+
+    impl FromRawHandle for SerialStream {
+        /// This method can potentially fail to override the communication timeout
+        /// value set in `sys::override_comm_timeouts` without any indication to the user.
+        unsafe fn from_raw_handle(handle: RawHandle) -> Self {
+            let inner = mem::ManuallyDrop::new(NativeBlockingSerialPort::from_raw_handle(handle));
+            let pipe = NamedPipe::from_raw_handle(handle);
+            sys::override_comm_timeouts(handle).ok();
+
+            Self { inner, pipe }
         }
     }
 }

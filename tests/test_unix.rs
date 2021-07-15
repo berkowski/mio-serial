@@ -7,7 +7,6 @@ extern crate serialport;
 use std::convert::TryFrom;
 use std::io::{Read, Write};
 use std::os::unix::prelude::*;
-use std::path::Path;
 use std::str;
 
 use mio_serial::SerialStream;
