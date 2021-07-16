@@ -13,8 +13,7 @@ categories = ["asynchronous", "hardware-support"]
 edition = "2018"
 
 [badges]
-appveyor = { repository = "berkowski/mio-serial", service = "github" }
-travis-ci = { repository = "berkowski/mio-serial", service = "github" }
+maintenance = { status = "looking-for-maintainer" }
 
 [features]
 default = []
