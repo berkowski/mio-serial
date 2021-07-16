@@ -25,7 +25,7 @@ implimentation details are provided with `#cfg[]` guards instead of discrete str
 Specifically:
 
 * Removed platform-specific `mio_serial::windows::Serial` and `mio_serial::unix::Serial`
-* Added `mio_serial::SerialStream` with platform platform specific requirements at compile time with `#[cfg()]`
+* Added `mio_serial::SerialStream` with platform specific requirements at compile time with `#[cfg()]`
 * Removed `COMPort::from_path`, use `SerialStream::open`
 * Removed `TTYPort::from_path`, use `SerialStream::open`
 * Removed `TTYPort::from_serial`.  Replaced with impl of `std::convert::TryFrom<serialport::TTYPort>`
