@@ -5,8 +5,8 @@
 //! **Windows support is present but largely untested by the author**
 //!
 //! ## Links
-//!   - repo:  https://github.com/berkowski/mio-serial
-//!   - docs:  https://docs.rs/mio-serial
+//!   - repo:  <https://github.com/berkowski/mio-serial>
+//!   - docs:  <https://docs.rs/mio-serial>
 #![deny(missing_docs)]
 #![warn(rust_2018_idioms)]
 
@@ -60,7 +60,7 @@ mod os_prelude {
     pub use std::io::{self, Read, Write};
     pub use std::mem;
     pub use std::os::windows::ffi::OsStrExt;
-    pub use std::os::windows::io::{FromRawHandle, RawHandle};
+    pub use std::os::windows::io::{AsRawHandle, FromRawHandle, RawHandle};
     pub use std::path::Path;
     pub use std::ptr;
     pub use std::time::Duration;
@@ -156,6 +156,38 @@ impl SerialStream {
     #[cfg(unix)]
     pub fn exclusive(&self) -> bool {
         self.inner.exclusive()
+    }
+    /// Attempts to clone the `SerialPort`. This allow you to write and read simultaneously from the
+    /// same serial connection.
+    ///
+    /// Also, you must be very careful when changing the settings of a cloned `SerialPort` : since
+    /// the settings are cached on a per object basis, trying to modify them from two different
+    /// objects can cause some nasty behavior.
+    ///
+    /// This is the same as `SerialPort::try_clone()` but returns the concrete type instead.
+    ///
+    /// # Errors
+    ///
+    /// This function returns an error if the serial port couldn't be cloned.
+    pub fn try_clone_native(&self) -> Result<SerialStream> {
+        // This works so long as the underlying serialport-rs method doesn't do anything but
+        // duplicate the low-level file descriptor.  This is the case as of serialport-rs:4.0.1
+        let cloned_native = self.inner.try_clone_native()?;
+        #[cfg(unix)]
+        {
+            Ok(Self {
+                inner: cloned_native,
+            })
+        }
+        #[cfg(windows)]
+        {
+            let handle = cloned_native.as_raw_handle();
+            let pipe = unsafe { NamedPipe::from_raw_handle(handle) };
+            Ok(Self {
+                inner: mem::ManuallyDrop::new(cloned_native),
+                pipe,
+            })
+        }
     }
 }
 
@@ -424,11 +456,7 @@ impl crate::SerialPort for SerialStream {
     /// This function returns an error if the serial port couldn't be cloned.
     #[inline(always)]
     fn try_clone(&self) -> crate::Result<Box<dyn crate::SerialPort>> {
-        Err(Error::new(
-            ErrorKind::Io(StdIoErrorKind::Other),
-            "SerialPort::try_clone not valid for SerialStream.",
-        ))
-        //self.inner.try_clone()
+        Ok(Box::new(self.try_clone_native()?))
     }
 
     /// Start transmitting a break

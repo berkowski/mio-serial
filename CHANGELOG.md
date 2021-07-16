@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [4.0.0-beta3] UNRELEASED
+
+### Added
+- `try_clone` and `try_clone_native` methods for `SerialStream`
+
 ## [4.0.0-beta2] 2021-07-16
 
 ### Added
