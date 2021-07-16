@@ -37,6 +37,17 @@ cargo build --no-default-features
 ## Examples
 A few examples can be found [here](https://github.com/berkowski/mio-serial/tree/master/examples).
 
+## Tests
+Useful tests for serial ports require... serial ports, and serial ports are not often provided by online CI providers.
+As so, automated build testing are really only check whether the code compiles, not whether it works.
+
+Integration tests are in the `tests/` directory and typically require two serial ports to run.
+The names of the serial ports can be configured at run time by setting the `TEST_PORT_NAMES` environment variable
+to a semi-colon delimited string with the two serial port names.  The default values are:
+
+- For Unix: `TEST_PORT_NAMES=/dev/ttyUSB0;/dev/ttyUSB1`
+- For Windows: `TEST_PORT_NAMES=COM1;COM2`
+
 ## License
 This software is licensed under [MIT](https://opensource.org/licenses/MIT).
 

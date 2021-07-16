@@ -41,7 +41,7 @@ pub use serialport::new;
 
 use mio::{event::Source, Interest, Registry, Token};
 use std::convert::TryFrom;
-use std::io::{Error as StdIoError, ErrorKind as StdIoErrorKind, Result as StdIoResult};
+use std::io::{Error as StdIoError, Result as StdIoResult};
 use std::time::Duration;
 
 #[cfg(unix)]
@@ -50,6 +50,7 @@ mod os_prelude {
     pub use nix::{self, libc};
     pub use serialport::TTYPort as NativeBlockingSerialPort;
     pub use std::os::unix::prelude::*;
+    pub use std::io::ErrorKind as StdIoErrorKind;
 }
 
 #[cfg(windows)]
@@ -561,7 +562,8 @@ impl TryFrom<NativeBlockingSerialPort> for SerialStream {
 
 #[cfg(unix)]
 mod io {
-    use super::{SerialStream, StdIoError, StdIoErrorKind, StdIoResult};
+    use super::{SerialStream, StdIoError, StdIoResult};
+    use std::io::ErrorKind as StdIoErrorKind;
     use nix::libc;
     use nix::sys::termios;
     use std::io::{Read, Write};
