@@ -45,14 +45,10 @@ environment:
 # default-toolchain and default-host manually here.
 install:
   # Windows Install
-  # - cmd: mkdir "C:\Program Files (x86)\com0com"
-  # - cmd: cd "C:\Windows\Temp"
-  - cmd: appveyor DownloadFile https://github.com/hybridgroup/rubyserial/raw/appveyor_deps/com0com.cer
-  - cmd: dir C:\"Program Files (x86)"\"Windows Kits"\10\bin\10.0.19041.0\x64
+  - cmd: cd ci
   - cmd: C:\"Program Files (x86)"\"Windows Kits"\10\bin\10.0.19041.0\x64\CertMgr.exe /add com0com.cer /s /r localMachine root
   - cmd: C:\"Program Files (x86)"\"Windows Kits"\10\bin\10.0.19041.0\x64\CertMgr.exe /add com0com.cer /s /r localMachine trustedpublisher
-  - cmd: appveyor DownloadFile https://github.com/hybridgroup/rubyserial/raw/appveyor_deps/setup_com0com_W7_x64_signed.exe
-  - cmd: set CNC_INSTALL_CNCA0_CNCB0_PORTS="YES"
+  - cmd: set CNC_INSTALL_CNCA0_CNCB0_PORTS=YES
   - cmd: .\setup_com0com_W7_x64_signed.exe /S
   - cmd: cd C:\"Program Files (x86)"\com0com
   - cmd: .\setupc.exe install PortName=COM10,EmuBR=yes PortName=COM11,EmuBR=yes
