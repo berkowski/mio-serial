@@ -1,14 +1,15 @@
 mod common;
+use common::SerialPortTestExt;
 
-use mio_serial::{self, SerialPort};
+use mio_serial;
 
 #[test]
 fn test_stream_open() {
-    let options = common::setup();
-    let port_name = options.port_names[0].clone();
-    let builder = mio_serial::new(port_name.clone(), 9600);
-    let stream = mio_serial::SerialStream::open(&builder)
-        .expect(format! {"Unable to open serial port {}", port_name}.as_str());
+    let baud_rate = 9600;
+    common::with_virtual_serial_ports(|port, _| {
+        let builder = mio_serial::new(port, baud_rate);
+        let stream = mio_serial::SerialStream::open(&builder)?;
 
-    assert_eq!(stream.baud_rate().unwrap(), 9600)
+        stream.expect_baud_rate(baud_rate)
+    })
 }
