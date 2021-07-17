@@ -1,12 +1,12 @@
-mod common;
-use common::SerialPortTestExt;
-
-use mio_serial;
+use mio_serial::{
+    self,
+    test::{self, SerialPortTestExt},
+};
 
 #[test]
 fn test_stream_open() {
     let baud_rate = 9600;
-    common::with_virtual_serial_ports(|port, _| {
+    test::with_virtual_serial_ports::<_, std::convert::Infallible>(|port, _| {
         let builder = mio_serial::new(port, baud_rate);
         let stream = mio_serial::SerialStream::open(&builder)?;
 

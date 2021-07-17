@@ -80,4 +80,4 @@ build: false
 # Don't run tests, they require actual serial ports and will fail on CI
 test_script:
   - cmd: set TEST_PORT_NAMES=COM10;COM11
-  - cargo test -j1 --verbose -- --test-threads=1
+  - cargo test -j1 --verbose --features=test -- --test-threads=1

@@ -35,10 +35,6 @@ pub use serialport::available_ports;
 // Re-export creation of SerialPortBuilder objects
 pub use serialport::new;
 
-//
-//
-//
-
 use mio::{event::Source, Interest, Registry, Token};
 use std::convert::TryFrom;
 use std::io::{Error as StdIoError, Result as StdIoResult};
@@ -829,3 +825,8 @@ impl SerialPortBuilderExt for SerialPortBuilder {
         SerialStream::open(&self)
     }
 }
+
+// Unfortunately we can't just hide this behind the normal #[cfg(test)]
+// see: https://users.rust-lang.org/t/what-are-the-rules-for-cfg-test/54122
+#[cfg(feature = "test")]
+pub mod test;

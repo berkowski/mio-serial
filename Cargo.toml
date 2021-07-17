@@ -18,6 +18,7 @@ maintenance = { status = "looking-for-maintainer" }
 [features]
 default = []
 libudev = ["serialport/libudev"]
+test = []     # Unfortunate 'hack' required for running tests to export the reusable code.
 
 [dependencies.mio]
 version = "0.7"

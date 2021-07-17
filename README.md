@@ -48,6 +48,12 @@ to a semi-colon delimited string with the two serial port names.  The default va
 - For Unix: `TEST_PORT_NAMES=/dev/ttyUSB0;/dev/ttyUSB1`
 - For Windows: `TEST_PORT_NAMES=COM1;COM2`
 
+**IMPORTANT** To run tests you need to pass enable the `test` feature.  The typical command is:
+
+```sh
+cargo test -j1 --features test -- --test-threads=1
+```
+
 ## License
 This software is licensed under [MIT](https://opensource.org/licenses/MIT).
 
