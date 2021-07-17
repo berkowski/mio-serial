@@ -49,8 +49,8 @@ mod os_prelude {
     pub use mio::unix::SourceFd;
     pub use nix::{self, libc};
     pub use serialport::TTYPort as NativeBlockingSerialPort;
-    pub use std::os::unix::prelude::*;
     pub use std::io::ErrorKind as StdIoErrorKind;
+    pub use std::os::unix::prelude::*;
 }
 
 #[cfg(windows)]
@@ -563,9 +563,9 @@ impl TryFrom<NativeBlockingSerialPort> for SerialStream {
 #[cfg(unix)]
 mod io {
     use super::{SerialStream, StdIoError, StdIoResult};
-    use std::io::ErrorKind as StdIoErrorKind;
     use nix::libc;
     use nix::sys::termios;
+    use std::io::ErrorKind as StdIoErrorKind;
     use std::io::{Read, Write};
     use std::os::unix::prelude::*;
 

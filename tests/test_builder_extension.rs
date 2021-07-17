@@ -8,7 +8,9 @@ fn test_builder_open_async() {
     let port_name = options.port_names[0].clone();
     let builder = mio_serial::new(port_name.clone(), 9600);
 
-    let stream = builder.open_async().unwrap();
+    let stream = builder
+        .open_async()
+        .expect(format! {"Could not open {}", port_name}.as_str());
 
     assert_eq!(stream.baud_rate().unwrap(), 9600);
 }

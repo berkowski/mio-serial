@@ -1,6 +1,6 @@
 image:
-  - Ubuntu
-  - macOS
+  # - Ubuntu
+  # - macOS
   - Visual Studio 2019
 
 ## Build Matrix ##
@@ -34,8 +34,8 @@ environment:
   APPVEYOR_YML_DISABLE_PS_LINUX: true
   matrix:
     - channel: stable
-    - channel: beta
-    - channel: nightly
+    # - channel: beta
+    # - channel: nightly
 
 # This is the most important part of the Appveyor configuration. This installs the version of Rust
 # specified by the 'channel' and 'target' environment variables from the build matrix. This uses
@@ -44,9 +44,29 @@ environment:
 # For simple configurations, instead of using the build matrix, you can simply set the
 # default-toolchain and default-host manually here.
 install:
+  # Windows Install
+  # - cmd: mkdir "C:\Program Files (x86)\com0com"
+  # - cmd: cd "C:\Windows\Temp"
+  - cmd: appveyor DownloadFile https://github.com/hybridgroup/rubyserial/raw/appveyor_deps/com0com.cer
+  - cmd: dir C:\"Program Files (x86)"\"Windows Kits"\10\bin\10.0.19041.0\x64
+  - cmd: C:\"Program Files (x86)"\"Windows Kits"\10\bin\10.0.19041.0\x64\CertMgr.exe /add com0com.cer /s /r localMachine root
+  - cmd: C:\"Program Files (x86)"\"Windows Kits"\10\bin\10.0.19041.0\x64\CertMgr.exe /add com0com.cer /s /r localMachine trustedpublisher
+  - cmd: appveyor DownloadFile https://github.com/hybridgroup/rubyserial/raw/appveyor_deps/setup_com0com_W7_x64_signed.exe
+  - cmd: set CNC_INSTALL_CNCA0_CNCB0_PORTS="YES"
+  - cmd: .\setup_com0com_W7_x64_signed.exe /S
+  - cmd: cd C:\"Program Files (x86)"\com0com
+  - cmd: .\setupc.exe install PortName=COM10,EmuBR=yes PortName=COM11,EmuBR=yes
+  - cmd: cd "%APPVEYOR_BUILD_FOLDER%"
   - cmd: appveyor DownloadFile https://win.rustup.rs/ -FileName rustup-init.exe
   - cmd: rustup-init -yv --default-toolchain %channel%
   - cmd: set PATH=%PATH%;%USERPROFILE%\.cargo\bin
+  # - cmd: choco install com0com
+  # - cmd: cd "C:\Program Files (x86)\com0com\"
+  # - cmd: set CNC_INSTALL_CNCA0_CNCB0_PORTS=YES
+  # - cmd: dir
+  # - cmd: .\setupc.exe --silent install PortName=COM10,EmuBR=yes PortName=COM11,EmuBR=yes
+  # - cmd: cd "%APPVEYOR_BUILD_FOLDER%"
+  # Linux install
   - sh: curl --proto '=https' --tlsv1.2 -sSf -o rustup-init https://sh.rustup.rs
   - sh: chmod u+x rustup-init
   - sh: ./rustup-init -y --default-toolchain ${channel}
@@ -63,4 +83,5 @@ build: false
 
 # Don't run tests, they require actual serial ports and will fail on CI
 test_script:
-  - cargo build --verbose
+  - cmd: set TEST_PORT_NAMES=COM10;COM11
+  - cargo test -j1 --verbose -- --test-threads=1
