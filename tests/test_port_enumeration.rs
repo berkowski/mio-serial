@@ -15,7 +15,7 @@ impl std::error::Error for PortNotFound {}
 /// Port enumeration doesn't seem to work on virtual serial ports created by com0com during
 /// the CI process
 #[test]
-#[ignore]
+#[ignore = "Port enumeration test does not seem to work with com0com virtual ports"]
 fn test_port_enumeration() {
     test::with_virtual_serial_ports(|port_a, port_b| {
         let names = [port_a, port_b];
