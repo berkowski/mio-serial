@@ -1,7 +1,7 @@
 image:
-  - Ubuntu
-  # - macOS
-  #- Visual Studio 2019
+  # - Ubuntu
+  - macOS
+  # - Visual Studio 2019
 
 ## Build Matrix ##
 
@@ -37,6 +37,9 @@ environment:
     # - channel: beta
     # - channel: nightly
 
+matrix:
+  allow_failures:
+    - image: macOS
 # This is the most important part of the Appveyor configuration. This installs the version of Rust
 # specified by the 'channel' and 'target' environment variables from the build matrix. This uses
 # rustup to install Rust.
@@ -63,6 +66,8 @@ install:
   # - cmd: .\setupc.exe --silent install PortName=COM10,EmuBR=yes PortName=COM11,EmuBR=yes
   # - cmd: cd "%APPVEYOR_BUILD_FOLDER%"
   # Linux install (socat already installed)
+  - sh: echo Image is $APPVEYOR_BUILD_WORKER_IMAGE
+  - sh: if [ "$APPVEYOR_BUILD_WORKER_IMAGE" = "macOS" ]; then HOMEBREW_NO_AUTO_UPDATE=1 brew install socat; fi
   # - sh: sudo apt-get update && sudo apt-get install socat
   - sh: curl --proto '=https' --tlsv1.2 -sSf -o rustup-init https://sh.rustup.rs
   - sh: chmod u+x rustup-init
