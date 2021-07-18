@@ -37,6 +37,11 @@ environment:
     # - channel: beta
     # - channel: nightly
 
+# OSX tests are allowed to fail until upstream serialport-rs crate fixes handling buadrate control for virtual serial
+# ports.  See:
+#  - https://gitlab.com/susurrus/serialport-rs/-/issues/105
+#  - https://gitlab.com/susurrus/serialport-rs/-/merge_requests/101
+
 matrix:
   allow_failures:
     - image: macOS
@@ -88,4 +93,4 @@ build: false
 test_script:
   - cmd: set TEST_PORT_NAMES=COM10;COM11
   - sh: export TEST_PORT_NAMES='/tmp/ttyS0;/tmp/ttyS1'
-  - cargo test -j1 --verbose --features=test -- --test-threads=1
+  - cargo test -j1 --features=test -- --test-threads=1
