@@ -3,7 +3,7 @@ mod common;
 use mio::{
     Interest, Token,
 };
-use mio_serial::{test, SerialPortBuilderExt};
+use mio_serial::SerialPortBuilderExt;
 
 use std::io::{Read, Write};
 
@@ -17,7 +17,7 @@ const TOKEN2: Token = Token(1);
 #[test]
 fn test_read_write_pair() {
     let baud_rate = 38400;
-    test::with_virtual_serial_ports(|port_a, port_b| {
+    common::with_serial_ports(|port_a, port_b| {
         let (mut poll, mut events) = common::init_with_poll()?;
 
         let mut port_1 = mio_serial::new(port_a, baud_rate).open_async()?;

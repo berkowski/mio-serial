@@ -5,6 +5,8 @@
 //! between the two code bases.
 #![allow(dead_code)]
 
+use serialport::{SerialPort, Error as SerialPortError};
+
 #[cfg(unix)]
 const DEFAULT_PORT_NAMES: &'static str = "/tty/USB0;/tty/USB1";
 #[cfg(windows)]
@@ -45,7 +47,7 @@ where
     /// An I/O error raised outside of the serialport interface
     Io(std::io::Error),
     /// A mio_serial::Error raised within the serialport interface
-    Serial(crate::Error),
+    Serial(SerialPortError),
     /// A port configuration mismatch
     Value(ValueError),
     /// User defined other type
@@ -77,33 +79,29 @@ where
     }
 }
 
-impl<T> From<crate::Error> for Error<T>
+impl<T> From<SerialPortError> for Error<T>
 where
     T: std::error::Error,
 {
-    fn from(error: crate::Error) -> Self {
+    fn from(error: SerialPortError) -> Self {
         Self::Serial(error)
     }
 }
 
-/// An extension trait that adds methods to help test serial port parameters
-pub trait SerialPortTestExt<T>: crate::SerialPort
-where
-    T: std::error::Error,
+pub fn expect_baud_rate<P, T>(port: &P, expected: u32) -> Result<(), Error<T>>
+where P: SerialPort,
+T: std::error::Error,
 {
-    /// Test an expected baud rate value
-    fn expect_baud_rate(&self, expected: u32) -> Result<(), Error<T>> {
-        let actual = self.baud_rate()?;
+    let actual = port.baud_rate()?;
 
-        if actual != expected {
-            Err(Error::Value(ValueError::BaudRate { expected, actual }))
-        } else {
-            Ok(())
-        }
+    if actual != expected{
+        Err(Error::Value(ValueError::BaudRate { expected, actual }))
+    } else {
+        Ok(())
     }
+
 }
 
-impl<T> SerialPortTestExt<T> for crate::SerialStream where T: std::error::Error {}
 
 /// Generic fixture for testing serialports with real or virtual hardware
 ///

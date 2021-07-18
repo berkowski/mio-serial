@@ -1,11 +1,9 @@
 //! Common test code.  Adapted from `mio/tests/util/mod.rs`
-
+#![allow(dead_code)]
 use mio::{
     Events, Interest, Poll, Token,
     event::Event,
 };
-use mio_serial::{SerialStream, test};
-
 use std::io::{Read, Write};
 use std::fmt::Formatter;
 use std::time::Duration;
@@ -70,11 +68,13 @@ impl std::error::Error for MioError {}
 //     }
 // }
 
-impl From<MioError> for test::Error<MioError> {
+impl From<MioError> for async_serial_test_helper::Error<MioError> {
     fn from(e: MioError) -> Self {
         Self::Other(e)
     }
 }
+
+pub type Error = async_serial_test_helper::Error<MioError>;
 
 #[derive(Debug)]
 pub struct Readiness(usize);
@@ -144,7 +144,7 @@ impl From<Interest> for Readiness {
     }
 }
 
-pub fn init_with_poll() -> Result<(Poll, Events), test::Error<MioError>> {
+pub fn init_with_poll() -> Result<(Poll, Events), Error> {
     let poll = Poll::new()?;
     let events = Events::with_capacity(16);
     Ok((poll, events))
@@ -178,7 +178,7 @@ pub fn expect_events(
     poll: &mut Poll,
     events: &mut Events,
     mut expected: Vec<ExpectEvent>,
-) -> Result<(), test::Error<MioError>> {
+) -> Result<(), Error> {
     // In a lot of calls we expect more then one event, but it could be that
     // poll returns the first event only in a single call. To be a bit more
     // lenient we'll poll a couple of times.
@@ -205,11 +205,11 @@ pub fn expect_events(
         return Ok(());
     }
     {
-        return Err(test::Error::Other(MioError::ExpectedEvent { expected }));
+        return Err(Error::Other(MioError::ExpectedEvent { expected }));
     }
 }
 
-pub fn expect_block(result: std::io::Result<usize>) -> Result<(), test::Error<MioError>> {
+pub fn expect_block(result: std::io::Result<usize>) -> Result<(), Error> {
     match result {
         Ok(_) => Err(MioError::ExpectedToBlock(None).into()),
         Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => Ok(()),
@@ -217,7 +217,7 @@ pub fn expect_block(result: std::io::Result<usize>) -> Result<(), test::Error<Mi
     }
 }
 /// Ensure the entire buffer is written
-pub fn checked_write(port: &mut SerialStream, data: &[u8]) -> Result<(), test::Error<MioError>> {
+pub fn checked_write(port: &mut mio_serial::SerialStream, data: &[u8]) -> Result<(), Error> {
     let n = port.write(data).map_err(|e| MioError::WriteFailed(e))?;
     if n == data.len() {
         Ok(())
@@ -228,7 +228,7 @@ pub fn checked_write(port: &mut SerialStream, data: &[u8]) -> Result<(), test::E
 }
 
 /// Ensure the entire buffer is read
-pub fn checked_read(port: &mut SerialStream, data: & mut [u8], expected: & [u8]) -> Result<(), test::Error<MioError>> {
+pub fn checked_read(port: &mut mio_serial::SerialStream, data: & mut [u8], expected: & [u8]) -> Result<(), Error> {
 
     let n = port.read(data).map_err(|e| MioError::ReadFailed(e))?;
     if n != expected.len() {
@@ -240,4 +240,18 @@ pub fn checked_read(port: &mut SerialStream, data: & mut [u8], expected: & [u8])
     }
 
     Ok(())
+}
+
+#[cfg(windows)]
+fn setup_serial_ports(_: &str, _: &str) {}
+
+#[cfg(windows)]
+fn teardown_serial_ports(_:()){}
+
+pub fn with_serial_ports<F, T>(test: F)
+    where
+        T: std::error::Error,
+        F: FnOnce(&str, &str) -> Result<(), async_serial_test_helper::Error<T>>,
+{
+        async_serial_test_helper::with_virtual_serial_ports_setup_fixture(setup_serial_ports, test, teardown_serial_ports)
 }

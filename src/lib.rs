@@ -825,8 +825,3 @@ impl SerialPortBuilderExt for SerialPortBuilder {
         SerialStream::open(&self)
     }
 }
-
-// Unfortunately we can't just hide this behind the normal #[cfg(test)]
-// see: https://users.rust-lang.org/t/what-are-the-rules-for-cfg-test/54122
-#[cfg(feature = "test")]
-pub mod test;

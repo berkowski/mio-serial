@@ -1,0 +1,17 @@
+[package]
+name = "async-serial-test-helper"
+version = "0.1.0"
+authors = ["Zac Berkowitz <zac.berkowitz@gmail.com>"]
+description = "Fixtures to help test async serial port code in `mio-serial` and `tokio-serial`"
+license = "MIT"
+homepage = "https://github.com/berkowski/mio-serial"
+repository = "https://github.com/berkowski/mio-serial"
+documentation = "http://docs.rs/async-serial-test-helper"
+readme = "README.md"
+keywords = ["rs232", "serial", "mio", "tokio"]
+categories = ["asynchronous", "hardware-support"]
+edition = "2018"
+
+[dependencies.serialport]
+version = "4"
+default-features = false

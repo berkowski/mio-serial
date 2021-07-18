@@ -1,4 +1,4 @@
-use mio_serial::{self, test};
+mod common;
 use std::fmt::Formatter;
 
 #[derive(Debug)]
@@ -17,14 +17,14 @@ impl std::error::Error for PortNotFound {}
 #[test]
 #[ignore = "Port enumeration test does not seem to work with com0com virtual ports"]
 fn test_port_enumeration() {
-    test::with_virtual_serial_ports(|port_a, port_b| {
+    common::with_serial_ports(|port_a, port_b| {
         let names = [port_a, port_b];
         let ports = mio_serial::available_ports()?;
         for name in names {
             ports
                 .iter()
                 .find(|&info| info.port_name == name)
-                .ok_or(test::Error::Other(PortNotFound(name.to_owned())))?;
+                .ok_or(async_serial_test_helper::Error::Other(PortNotFound(name.to_owned())))?;
         }
         Ok(())
     })
