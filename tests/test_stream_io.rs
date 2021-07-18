@@ -20,8 +20,8 @@ fn test_read_write_pair() {
     common::with_serial_ports(|port_a, port_b| {
         let (mut poll, mut events) = common::init_with_poll()?;
 
-        let mut port_1 = mio_serial::new(port_a, baud_rate).open_async()?;
-        let mut port_2 = mio_serial::new(port_b, baud_rate).open_async()?;
+        let mut port_1 = mio_serial::new(port_a, baud_rate).open_native_async()?;
+        let mut port_2 = mio_serial::new(port_b, baud_rate).open_native_async()?;
 
         // register both serial ports for read and write events
         poll.registry()

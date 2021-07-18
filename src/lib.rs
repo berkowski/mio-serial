@@ -813,15 +813,15 @@ impl Source for SerialStream {
 ///
 /// - open_native_async
 ///
-/// These methods mirror the `open` and `open_native` methods of SerialPortBuilder
+/// These methods mirror the `open_native` methods of SerialPortBuilder
 pub trait SerialPortBuilderExt {
     /// Open a platform-specific interface to the port with the specified settings
-    fn open_async(self) -> Result<SerialStream>;
+    fn open_native_async(self) -> Result<SerialStream>;
 }
 
 impl SerialPortBuilderExt for SerialPortBuilder {
     /// Open a platform-specific interface to the port with the specified settings
-    fn open_async(self) -> Result<SerialStream> {
+    fn open_native_async(self) -> Result<SerialStream> {
         SerialStream::open(&self)
     }
 }

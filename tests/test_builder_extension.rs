@@ -9,7 +9,7 @@ fn test_builder_open_async() {
         let baud_rate = 9600;
         let builder = mio_serial::new(port, baud_rate);
 
-        let stream = builder.open_async()?;
+        let stream = builder.open_native_async()?;
 
         async_serial_test_helper::expect_baud_rate(&stream, baud_rate)
     })

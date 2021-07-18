@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Added
 - `try_clone` and `try_clone_native` methods for `SerialStream`
 
+### Changed
+- Renamed `SerialPortBuilderExt::open_async` to `SerialPortBuilderExt::open_native_async` to reflect the original
+  intention
+
 ## [4.0.0-beta2] 2021-07-16
 
 ### Added

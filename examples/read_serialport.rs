@@ -33,7 +33,7 @@ pub fn main() -> io::Result<()> {
 
     // Create the serial port
     println!("Opening {} at 9600,8N1", path);
-    let mut rx = mio_serial::new(path, DEFAULT_BAUD).open_async()?;
+    let mut rx = mio_serial::new(path, DEFAULT_BAUD).open_native_async()?;
 
     // #[cfg(unix)]
     // let mut rx = mio_serial::TTYPort::open(&builder)?;
