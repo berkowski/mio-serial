@@ -1,7 +1,7 @@
 image:
-  # - Ubuntu
+  - Ubuntu
   # - macOS
-  - Visual Studio 2019
+  #- Visual Studio 2019
 
 ## Build Matrix ##
 
@@ -62,7 +62,8 @@ install:
   # - cmd: dir
   # - cmd: .\setupc.exe --silent install PortName=COM10,EmuBR=yes PortName=COM11,EmuBR=yes
   # - cmd: cd "%APPVEYOR_BUILD_FOLDER%"
-  # Linux install
+  # Linux install (socat already installed)
+  # - sh: sudo apt-get update && sudo apt-get install socat
   - sh: curl --proto '=https' --tlsv1.2 -sSf -o rustup-init https://sh.rustup.rs
   - sh: chmod u+x rustup-init
   - sh: ./rustup-init -y --default-toolchain ${channel}
@@ -70,6 +71,7 @@ install:
   #- sh: export PATH=${PATH};${HOME}/.cargo/bin
   - rustc -vV
   - cargo -vV
+  - sh: socat -V
 
 ## Build Script ##
 
@@ -80,4 +82,5 @@ build: false
 # Don't run tests, they require actual serial ports and will fail on CI
 test_script:
   - cmd: set TEST_PORT_NAMES=COM10;COM11
+  - sh: export TEST_PORT_NAMES='/tmp/ttyS0;/tmp/ttyS1'
   - cargo test -j1 --verbose --features=test -- --test-threads=1

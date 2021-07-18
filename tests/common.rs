@@ -1,13 +1,13 @@
 //! Common test code.  Adapted from `mio/tests/util/mod.rs`
 #![allow(dead_code)]
-use mio::{
-    Events, Interest, Poll, Token,
-    event::Event,
-};
-use std::io::{Read, Write};
+use mio::{event::Event, Events, Interest, Poll, Token};
 use std::fmt::Formatter;
-use std::time::Duration;
+use std::io::{Read, Write};
 use std::ops::BitOr;
+
+use std::process;
+use std::time::Duration;
+use std::thread;
 
 #[derive(Debug)]
 pub enum MioError {
@@ -17,26 +17,26 @@ pub enum MioError {
     },
     WriteFailed(std::io::Error),
     ReadFailed(std::io::Error),
-    ShortWrite{
+    ShortWrite {
         /// Expected number of bytes
         expected: usize,
         /// Actual number of bytes written,
         actual: usize,
     },
-    ShortRead{
+    ShortRead {
         /// Expected number of bytes
         expected: usize,
         /// Actual number of bytes read,
         actual: usize,
     },
-    BadReadData{
+    BadReadData {
         /// Expected data
         expected: Vec<u8>,
         /// Actual data read
         actual: Vec<u8>,
     },
     /// Expected to block but didn't
-    ExpectedToBlock(Option<std::io::Error>)
+    ExpectedToBlock(Option<std::io::Error>),
 }
 
 impl std::fmt::Display for MioError {
@@ -47,14 +47,36 @@ impl std::fmt::Display for MioError {
             }
             Self::WriteFailed(ref e) => write!(f, "failed to write data with error: {}", e),
             Self::ReadFailed(ref e) => write!(f, "failed to read data with error: {}", e),
-            Self::ShortWrite {ref expected, ref actual} => write!(f, "wrote {} bytes instead of {}", actual, expected),
-            Self::ShortRead {ref expected, ref actual} => write!(f, "read {} bytes instead of {}", actual, expected),
-            Self::BadReadData {ref expected, ref actual} => write!(f, "mismatched data on read.  Expected {:?}, read {:?}", expected.as_slice(), actual.as_slice()),
-            Self::ExpectedToBlock(ref maybe_error) => if let Some(e) = maybe_error {
-                write!(f, "expected operation to block but errored with {} instead", e)
-            }
-            else {
-                write!(f, "expected operation to block but it completed successfully.")
+            Self::ShortWrite {
+                ref expected,
+                ref actual,
+            } => write!(f, "wrote {} bytes instead of {}", actual, expected),
+            Self::ShortRead {
+                ref expected,
+                ref actual,
+            } => write!(f, "read {} bytes instead of {}", actual, expected),
+            Self::BadReadData {
+                ref expected,
+                ref actual,
+            } => write!(
+                f,
+                "mismatched data on read.  Expected {:?}, read {:?}",
+                expected.as_slice(),
+                actual.as_slice()
+            ),
+            Self::ExpectedToBlock(ref maybe_error) => {
+                if let Some(e) = maybe_error {
+                    write!(
+                        f,
+                        "expected operation to block but errored with {} instead",
+                        e
+                    )
+                } else {
+                    write!(
+                        f,
+                        "expected operation to block but it completed successfully."
+                    )
+                }
             }
         }
     }
@@ -221,22 +243,36 @@ pub fn checked_write(port: &mut mio_serial::SerialStream, data: &[u8]) -> Result
     let n = port.write(data).map_err(|e| MioError::WriteFailed(e))?;
     if n == data.len() {
         Ok(())
-    }
-    else {
-        Err(MioError::ShortWrite{expected: data.len(), actual: n}.into())
+    } else {
+        Err(MioError::ShortWrite {
+            expected: data.len(),
+            actual: n,
+        }
+        .into())
     }
 }
 
 /// Ensure the entire buffer is read
-pub fn checked_read(port: &mut mio_serial::SerialStream, data: & mut [u8], expected: & [u8]) -> Result<(), Error> {
-
+pub fn checked_read(
+    port: &mut mio_serial::SerialStream,
+    data: &mut [u8],
+    expected: &[u8],
+) -> Result<(), Error> {
     let n = port.read(data).map_err(|e| MioError::ReadFailed(e))?;
     if n != expected.len() {
-        return Err(MioError::ShortRead { expected: expected.len(), actual: n }.into());
+        return Err(MioError::ShortRead {
+            expected: expected.len(),
+            actual: n,
+        }
+        .into());
     }
 
     if &data[..n] != expected {
-        return Err(MioError::BadReadData {expected: Vec::from(expected), actual: Vec::from(&data[..n])}.into())
+        return Err(MioError::BadReadData {
+            expected: Vec::from(expected),
+            actual: Vec::from(&data[..n]),
+        }
+        .into());
     }
 
     Ok(())
@@ -245,13 +281,38 @@ pub fn checked_read(port: &mut mio_serial::SerialStream, data: & mut [u8], expec
 #[cfg(windows)]
 fn setup_serial_ports(_: &str, _: &str) {}
 
+#[cfg(unix)]
+fn setup_serial_ports(port_a: &str, port_b: &str) -> process::Child {
+    let device_a = format!("PTY,link={}", port_a);
+    let device_b = format!("PTY,link={}", port_b);
+    let handle = process::Command::new("socat")
+        .arg(device_a.as_str())
+        .arg(device_b.as_str())
+        .spawn()
+        .expect("Unable to start socat process");
+    println!("Socat started w/ id: '{}'", handle.id());
+    thread::sleep(Duration::from_millis(500));
+    handle
+}
+
 #[cfg(windows)]
-fn teardown_serial_ports(_:()){}
+fn teardown_serial_ports(_: ()) {}
+
+#[cfg(unix)]
+fn teardown_serial_ports(handle: process::Child) {
+    let mut handle = handle;
+    handle.kill().ok();
+    handle.wait().ok();
+}
 
 pub fn with_serial_ports<F, T>(test: F)
-    where
-        T: std::error::Error,
-        F: FnOnce(&str, &str) -> Result<(), async_serial_test_helper::Error<T>>,
+where
+    T: std::error::Error,
+    F: FnOnce(&str, &str) -> Result<(), async_serial_test_helper::Error<T>>,
 {
-        async_serial_test_helper::with_virtual_serial_ports_setup_fixture(setup_serial_ports, test, teardown_serial_ports)
+    async_serial_test_helper::with_virtual_serial_ports_setup_fixture(
+        setup_serial_ports,
+        test,
+        teardown_serial_ports,
+    )
 }

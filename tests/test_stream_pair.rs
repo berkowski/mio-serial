@@ -1,8 +1,10 @@
 #![cfg(unix)]
+use std::io::{Read, Write};
+use std::os::unix::io::AsRawFd;
 
 #[test]
 fn test_stream_pair() {
-    let (mut master, mut slave) = SerialStream::pair().expect("Unable to create ptty pair");
+    let (mut master, mut slave) = mio_serial::SerialStream::pair().expect("Unable to create ptty pair");
 
     // Test file descriptors.
     assert!(
@@ -38,7 +40,7 @@ fn test_stream_pair() {
     );
 
     assert_eq!(
-        str::from_utf8(&buf[..nbytes]).unwrap(),
+        std::str::from_utf8(&buf[..nbytes]).unwrap(),
         msg,
         "Received message does not match sent"
     );

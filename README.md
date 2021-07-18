@@ -51,7 +51,7 @@ to a semi-colon delimited string with the two serial port names.  The default va
 **IMPORTANT** To run tests you need to pass enable the `test` feature.  The typical command is:
 
 ```sh
-cargo test -j1 --features test -- --test-threads=1
+cargo test -j1 -- --test-threads=1
 ```
 
 ## License

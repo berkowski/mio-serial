@@ -20,11 +20,10 @@ fn test_port_enumeration() {
     common::with_serial_ports(|port_a, port_b| {
         let names = [port_a, port_b];
         let ports = mio_serial::available_ports()?;
-        for name in names {
-            ports
-                .iter()
-                .find(|&info| info.port_name == name)
-                .ok_or(async_serial_test_helper::Error::Other(PortNotFound(name.to_owned())))?;
+        for name in names.iter() {
+            ports.iter().find(|&info| info.port_name == *name).ok_or(
+                async_serial_test_helper::Error::Other(PortNotFound((*name).to_owned())),
+            )?;
         }
         Ok(())
     })

@@ -1,8 +1,6 @@
 mod common;
 
-use mio::{
-    Interest, Token,
-};
+use mio::{Interest, Token};
 use mio_serial::SerialPortBuilderExt;
 
 use std::io::{Read, Write};
@@ -20,7 +18,9 @@ fn test_read_write_pair() {
     common::with_serial_ports(|port_a, port_b| {
         let (mut poll, mut events) = common::init_with_poll()?;
 
+        println!("Opening {}", port_a);
         let mut port_1 = mio_serial::new(port_a, baud_rate).open_native_async()?;
+        println!("Opening {}", port_b);
         let mut port_2 = mio_serial::new(port_b, baud_rate).open_native_async()?;
 
         // register both serial ports for read and write events
@@ -35,9 +35,7 @@ fn test_read_write_pair() {
         common::expect_events(
             &mut poll,
             &mut events,
-            vec![
-                common::ExpectEvent::new(TOKEN1, Interest::WRITABLE),
-            ],
+            vec![common::ExpectEvent::new(TOKEN1, Interest::WRITABLE)],
         )?;
 
         // port2 should be blocking
@@ -51,9 +49,7 @@ fn test_read_write_pair() {
         common::expect_events(
             &mut poll,
             &mut events,
-            vec![
-                common::ExpectEvent::new(TOKEN2, Interest::READABLE),
-            ],
+            vec![common::ExpectEvent::new(TOKEN2, Interest::READABLE)],
         )?;
 
         // read data on port 2
@@ -61,7 +57,6 @@ fn test_read_write_pair() {
 
         // port 2 should then return to blocking
         common::expect_block(port_2.read(&mut buf).into())?;
-
 
         // port 1 should be blocking on read for the reply
         common::expect_block(port_1.read(&mut buf).into())?;
@@ -74,9 +69,7 @@ fn test_read_write_pair() {
         common::expect_events(
             &mut poll,
             &mut events,
-            vec![
-                common::ExpectEvent::new(TOKEN1, Interest::READABLE),
-            ],
+            vec![common::ExpectEvent::new(TOKEN1, Interest::READABLE)],
         )?;
         // and be able to read the full data
         common::checked_read(&mut port_1, &mut buf, DATA2)?;

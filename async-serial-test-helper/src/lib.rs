@@ -5,7 +5,7 @@
 //! between the two code bases.
 #![allow(dead_code)]
 
-use serialport::{SerialPort, Error as SerialPortError};
+use serialport::{Error as SerialPortError, SerialPort};
 
 #[cfg(unix)]
 const DEFAULT_PORT_NAMES: &'static str = "/tty/USB0;/tty/USB1";
@@ -89,19 +89,18 @@ where
 }
 
 pub fn expect_baud_rate<P, T>(port: &P, expected: u32) -> Result<(), Error<T>>
-where P: SerialPort,
-T: std::error::Error,
+where
+    P: SerialPort,
+    T: std::error::Error,
 {
     let actual = port.baud_rate()?;
 
-    if actual != expected{
+    if actual != expected {
         Err(Error::Value(ValueError::BaudRate { expected, actual }))
     } else {
         Ok(())
     }
-
 }
-
 
 /// Generic fixture for testing serialports with real or virtual hardware
 ///
