@@ -1,7 +1,7 @@
 image:
-  # - Ubuntu
+  - Ubuntu
   - macOS
-  # - Visual Studio 2019
+  - Visual Studio 2019
 
 ## Build Matrix ##
 
@@ -34,8 +34,8 @@ environment:
   APPVEYOR_YML_DISABLE_PS_LINUX: true
   matrix:
     - channel: stable
-    # - channel: beta
-    # - channel: nightly
+    - channel: beta
+    - channel: nightly
 
 # OSX tests are allowed to fail until upstream serialport-rs crate fixes handling buadrate control for virtual serial
 # ports.  See:
