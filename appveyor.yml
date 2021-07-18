@@ -93,4 +93,4 @@ build: false
 test_script:
   - cmd: set TEST_PORT_NAMES=COM10;COM11
   - sh: export TEST_PORT_NAMES='/tmp/ttyS0;/tmp/ttyS1'
-  - cargo test -j1 --features=test -- --test-threads=1
+  - cargo test -j1 -- --test-threads=1
