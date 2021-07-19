@@ -13,6 +13,6 @@ fn test_native_from_blocking() {
         let stream = mio_serial::SerialStream::try_from(native_blocking)
             .expect("unable to convert from blocking serial port object");
 
-        async_serial_test_helper::assert_baud_rate(&stream, baud_rate)
+        common::assert_baud_rate(&stream, baud_rate)
     })
 }

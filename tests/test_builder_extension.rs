@@ -13,6 +13,6 @@ fn test_builder_open_async() {
             .open_native_async()
             .expect("unable to open serial port");
 
-        async_serial_test_helper::assert_baud_rate(&stream, baud_rate)
+        common::assert_baud_rate(&stream, baud_rate)
     })
 }

@@ -15,9 +15,6 @@ edition = "2018"
 [badges]
 maintenance = { status = "looking-for-maintainer" }
 
-[workspace]
-members = ["async-serial-test-helper"]
-
 [features]
 default = []
 libudev = ["serialport/libudev"]
@@ -36,11 +33,5 @@ nix = "0.22"
 [target.'cfg(windows)'.dependencies]
 winapi = { version = "0.3", features = ["commapi", "handleapi", "winbase"] }
 
-[dev-dependencies.async-serial-test-helper]
-version = "0.1"
-
 [[example]]
 name = "read_serialport"
-
-[patch.crates-io]
-async-serial-test-helper = { path = "async-serial-test-helper/" }

@@ -6,10 +6,17 @@ use std::ops::BitOr;
 use std::panic;
 use std::time::Duration;
 
+use serialport::SerialPort;
+
 #[cfg_attr(windows, allow(unused_imports))]
 use std::process;
 #[cfg_attr(windows, allow(unused_imports))]
 use std::thread;
+
+#[cfg(unix)]
+const DEFAULT_PORT_NAMES: &'static str = "/tty/USB0;/tty/USB1";
+#[cfg(windows)]
+const DEFAULT_PORT_NAMES: &'static str = "COM1;COM2";
 
 #[derive(Debug)]
 pub struct Readiness(usize);
@@ -192,9 +199,35 @@ pub fn with_serial_ports<F>(test: F)
 where
     F: FnOnce(&str, &str) + panic::UnwindSafe,
 {
-    async_serial_test_helper::with_virtual_serial_ports_setup_fixture(
-        setup_serial_ports,
-        test,
-        teardown_serial_ports,
-    )
+    let port_names: Vec<String> = std::option_env!("TEST_PORT_NAMES")
+        .unwrap_or(DEFAULT_PORT_NAMES)
+        .split(';')
+        .map(|s| s.to_owned())
+        .collect();
+
+    if port_names.len() < 2 {
+        panic!("Expected two port names, found {}", port_names.len())
+    }
+
+    let port_a = port_names[0].as_str();
+    let port_b = port_names[1].as_str();
+
+    let fixture = setup_serial_ports(port_a, port_b);
+
+    let result = std::panic::catch_unwind(|| test(port_a, port_b));
+
+    teardown_serial_ports(fixture);
+
+    if let Err(e) = result {
+        panic::resume_unwind(e);
+    }
+}
+
+pub fn assert_baud_rate<P>(port: &P, expected: u32)
+    where
+        P: SerialPort,
+{
+    let actual = port.baud_rate().expect("unable to get baud rate");
+
+    assert_eq!(actual, expected, "baud rate not equal");
 }
