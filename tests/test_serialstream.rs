@@ -1,20 +1,82 @@
 mod common;
-
-use mio::{Interest, Token};
 use mio_serial::SerialPortBuilderExt;
 
-use std::io::{Read, Write};
+#[test]
+fn test_builder_open_async() {
+    common::with_serial_ports(|port, _| {
+        let baud_rate = 9600;
+        let builder = mio_serial::new(port, baud_rate);
 
-const DATA1: &[u8] = b"Here is an example string";
-const DATA2: &[u8] = b"And here is a reply to the example string";
-//const DATA1_LEN: usize = DATA1.len();
-const DEFAULT_BUF_SIZE: usize = 64;
-const TOKEN1: Token = Token(0);
-const TOKEN2: Token = Token(1);
+        let stream = builder
+            .open_native_async()
+            .expect("unable to open serial port");
+
+        common::assert_baud_rate(&stream, baud_rate)
+    })
+}
+
+#[test]
+fn test_native_from_blocking() {
+    use std::convert::TryFrom;
+    let baud_rate = 9600;
+
+    common::with_serial_ports(|port, _| {
+        let native_blocking = mio_serial::new(port, baud_rate)
+            .open_native()
+            .expect(format!("unable to open serial port {}", port).as_str());
+
+        let stream = mio_serial::SerialStream::try_from(native_blocking)
+            .expect("unable to convert from blocking serial port object");
+
+        common::assert_baud_rate(&stream, baud_rate)
+    })
+}
+
+#[test]
+fn test_stream_open() {
+    let baud_rate = 9600;
+    common::with_serial_ports(|port, _| {
+        let builder = mio_serial::new(port, baud_rate);
+        let stream = mio_serial::SerialStream::open(&builder).expect("unable to open serial port");
+
+        common::assert_baud_rate(&stream, baud_rate)
+    })
+}
+
+/// Port enumeration doesn't seem to work on virtual serial ports created by com0com during
+/// the CI process
+#[test]
+#[ignore = "Port enumeration test does not seem to work with com0com virtual ports"]
+fn test_port_enumeration() {
+    common::with_serial_ports(|port_a, port_b| {
+        let names = [port_a, port_b];
+        let ports = mio_serial::available_ports().expect("unable to enumerate serial ports");
+        for name in names.iter() {
+            ports.iter().find(|&info| info.port_name == *name).expect(
+                format!(
+                    "unable to find serial port named {} in enumerated ports",
+                    name
+                )
+                .as_str(),
+            );
+        }
+    })
+}
 
 #[test]
 fn test_read_write_pair() {
     let baud_rate = 38400;
+
+    use mio::{Interest, Token};
+    use std::io::{Read, Write};
+
+    const DATA1: &[u8] = b"Here is an example string";
+    const DATA2: &[u8] = b"And here is a reply to the example string";
+    //const DATA1_LEN: usize = DATA1.len();
+    const DEFAULT_BUF_SIZE: usize = 64;
+    const TOKEN1: Token = Token(0);
+    const TOKEN2: Token = Token(1);
+
     common::with_serial_ports(|port_a, port_b| {
         let (mut poll, mut events) = common::init_with_poll();
 

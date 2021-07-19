@@ -8,13 +8,16 @@ use std::time::Duration;
 
 use serialport::SerialPort;
 
-#[cfg_attr(windows, allow(unused_imports))]
+#[cfg(unix)]
 use std::process;
-#[cfg_attr(windows, allow(unused_imports))]
+#[cfg(unix)]
 use std::thread;
 
+/// Default serial port names used for testing
 #[cfg(unix)]
 const DEFAULT_PORT_NAMES: &'static str = "/tty/USB0;/tty/USB1";
+
+/// Default serial port names used for testing
 #[cfg(windows)]
 const DEFAULT_PORT_NAMES: &'static str = "COM1;COM2";
 
@@ -168,9 +171,13 @@ pub fn checked_read(port: &mut mio_serial::SerialStream, data: &mut [u8], expect
     assert_eq!(&data[..n], expected);
 }
 
+/// Virtual serial ports used in testing on windows are provided by com0com
+/// before any cargo functions are invoked.  No special seteup required
 #[cfg(windows)]
 fn setup_serial_ports(_: &str, _: &str) {}
 
+/// Virtual serial ports used in testing on unix are provided by socat.
+/// This method will create a pair of of pseudo tty's in a child process
 #[cfg(unix)]
 fn setup_serial_ports(port_a: &str, port_b: &str) -> process::Child {
     let device_a = format!("PTY,link={}", port_a);
@@ -185,9 +192,12 @@ fn setup_serial_ports(port_a: &str, port_b: &str) -> process::Child {
     handle
 }
 
+/// No special cleanup is needed for the virtual serial ports created by
+/// com0com
 #[cfg(windows)]
 fn teardown_serial_ports(_: ()) {}
 
+/// kills the socat process to close the virtual serial ports.
 #[cfg(unix)]
 fn teardown_serial_ports(handle: process::Child) {
     let mut handle = handle;
@@ -195,6 +205,13 @@ fn teardown_serial_ports(handle: process::Child) {
     handle.wait().ok();
 }
 
+/// Run a test with the two provided serial port names
+///
+/// Provide a closure that accepts two &str representing the names of two serial ports
+/// for testing.  Test failures should panic!
+///
+/// Serial port names are determined from the `TEST_PORT_NAMES` environment variable if
+/// present.  Defaults to `DEFAULT_PORT_NAMES`
 pub fn with_serial_ports<F>(test: F)
 where
     F: FnOnce(&str, &str) + panic::UnwindSafe,
@@ -223,9 +240,10 @@ where
     }
 }
 
+/// Assert serial port baud rate matches expected value.
 pub fn assert_baud_rate<P>(port: &P, expected: u32)
-    where
-        P: SerialPort,
+where
+    P: SerialPort,
 {
     let actual = port.baud_rate().expect("unable to get baud rate");
 
