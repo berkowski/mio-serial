@@ -4,7 +4,8 @@ use std::os::unix::io::AsRawFd;
 
 #[test]
 fn test_stream_pair() {
-    let (mut master, mut slave) = mio_serial::SerialStream::pair().expect("Unable to create ptty pair");
+    let (mut master, mut slave) =
+        mio_serial::SerialStream::pair().expect("Unable to create ptty pair");
 
     // Test file descriptors.
     assert!(

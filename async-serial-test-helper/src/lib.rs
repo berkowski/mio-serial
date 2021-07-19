@@ -6,6 +6,7 @@
 #![allow(dead_code)]
 
 use serialport::{Error as SerialPortError, SerialPort};
+use std::panic;
 
 #[cfg(unix)]
 const DEFAULT_PORT_NAMES: &'static str = "/tty/USB0;/tty/USB1";
@@ -88,18 +89,13 @@ where
     }
 }
 
-pub fn expect_baud_rate<P, T>(port: &P, expected: u32) -> Result<(), Error<T>>
+pub fn assert_baud_rate<P>(port: &P, expected: u32)
 where
     P: SerialPort,
-    T: std::error::Error,
 {
-    let actual = port.baud_rate()?;
+    let actual = port.baud_rate().expect("unable to get baud rate");
 
-    if actual != expected {
-        Err(Error::Value(ValueError::BaudRate { expected, actual }))
-    } else {
-        Ok(())
-    }
+    assert_eq!(actual, expected, "baud rate not equal");
 }
 
 /// Generic fixture for testing serialports with real or virtual hardware
@@ -135,10 +131,9 @@ where
 /// ```text
 /// test::with_virtual_serial_ports::<_, std::convert::Infallible>(|port, _| { ...
 /// ```
-pub fn with_virtual_serial_ports_setup_fixture<S, F, T, C, R>(setup: S, test: F, teardown: C)
+pub fn with_virtual_serial_ports_setup_fixture<S, F, C, R>(setup: S, test: F, teardown: C)
 where
-    T: std::error::Error,
-    F: FnOnce(&str, &str) -> Result<(), Error<T>>,
+    F: FnOnce(&str, &str) + std::panic::UnwindSafe,
     S: FnOnce(&str, &str) -> R,
     C: FnOnce(R),
 {
@@ -156,9 +151,12 @@ where
     let port_b = port_names[1].as_str();
 
     let fixture = setup(port_a, port_b);
-    let result = test(port_a, port_b);
+
+    let result = std::panic::catch_unwind(|| test(port_a, port_b));
     teardown(fixture);
-    result.unwrap();
+    if let Err(e) = result {
+        panic::resume_unwind(e);
+    }
 }
 
 /// Convenience fixture for testing serialports without any setup or teardown
@@ -187,8 +185,7 @@ where
 /// ```
 pub fn with_virtual_serial_ports<F, T>(test: F)
 where
-    T: std::error::Error,
-    F: FnOnce(&str, &str) -> Result<(), Error<T>>,
+    F: FnOnce(&str, &str) + panic::UnwindSafe,
 {
     with_virtual_serial_ports_setup_fixture(|_, _| {}, test, |_| {});
     // // Get port names from environment variable

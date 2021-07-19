@@ -1,102 +1,15 @@
 //! Common test code.  Adapted from `mio/tests/util/mod.rs`
 #![allow(dead_code)]
 use mio::{event::Event, Events, Interest, Poll, Token};
-use std::fmt::Formatter;
 use std::io::{Read, Write};
 use std::ops::BitOr;
-
-use std::process;
+use std::panic;
 use std::time::Duration;
+
+#[cfg_attr(windows, allow(unused_imports))]
+use std::process;
+#[cfg_attr(windows, allow(unused_imports))]
 use std::thread;
-
-#[derive(Debug)]
-pub enum MioError {
-    ExpectedEvent {
-        /// Expected events that were not found
-        expected: Vec<ExpectEvent>,
-    },
-    WriteFailed(std::io::Error),
-    ReadFailed(std::io::Error),
-    ShortWrite {
-        /// Expected number of bytes
-        expected: usize,
-        /// Actual number of bytes written,
-        actual: usize,
-    },
-    ShortRead {
-        /// Expected number of bytes
-        expected: usize,
-        /// Actual number of bytes read,
-        actual: usize,
-    },
-    BadReadData {
-        /// Expected data
-        expected: Vec<u8>,
-        /// Actual data read
-        actual: Vec<u8>,
-    },
-    /// Expected to block but didn't
-    ExpectedToBlock(Option<std::io::Error>),
-}
-
-impl std::fmt::Display for MioError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::ExpectedEvent { ref expected } => {
-                write!(f, "the following events were not found: {:?}", expected)
-            }
-            Self::WriteFailed(ref e) => write!(f, "failed to write data with error: {}", e),
-            Self::ReadFailed(ref e) => write!(f, "failed to read data with error: {}", e),
-            Self::ShortWrite {
-                ref expected,
-                ref actual,
-            } => write!(f, "wrote {} bytes instead of {}", actual, expected),
-            Self::ShortRead {
-                ref expected,
-                ref actual,
-            } => write!(f, "read {} bytes instead of {}", actual, expected),
-            Self::BadReadData {
-                ref expected,
-                ref actual,
-            } => write!(
-                f,
-                "mismatched data on read.  Expected {:?}, read {:?}",
-                expected.as_slice(),
-                actual.as_slice()
-            ),
-            Self::ExpectedToBlock(ref maybe_error) => {
-                if let Some(e) = maybe_error {
-                    write!(
-                        f,
-                        "expected operation to block but errored with {} instead",
-                        e
-                    )
-                } else {
-                    write!(
-                        f,
-                        "expected operation to block but it completed successfully."
-                    )
-                }
-            }
-        }
-    }
-}
-
-impl std::error::Error for MioError {}
-
-// impl Into<test::Error<MioError>> for MioError {
-//     fn into(self) -> test::Error<MioError> {
-//         test::Error::Other(self)
-//     }
-// }
-
-impl From<MioError> for async_serial_test_helper::Error<MioError> {
-    fn from(e: MioError) -> Self {
-        Self::Other(e)
-    }
-}
-
-pub type Error = async_serial_test_helper::Error<MioError>;
 
 #[derive(Debug)]
 pub struct Readiness(usize);
@@ -166,10 +79,10 @@ impl From<Interest> for Readiness {
     }
 }
 
-pub fn init_with_poll() -> Result<(Poll, Events), Error> {
-    let poll = Poll::new()?;
+pub fn init_with_poll() -> (Poll, Events) {
+    let poll = Poll::new().expect("unable to create poll object");
     let events = Events::with_capacity(16);
-    Ok((poll, events))
+    (poll, events)
 }
 
 /// An event that is expected to show up when `Poll` is polled, see
@@ -196,16 +109,13 @@ impl ExpectEvent {
     }
 }
 
-pub fn expect_events(
-    poll: &mut Poll,
-    events: &mut Events,
-    mut expected: Vec<ExpectEvent>,
-) -> Result<(), Error> {
+pub fn expect_events(poll: &mut Poll, events: &mut Events, mut expected: Vec<ExpectEvent>) {
     // In a lot of calls we expect more then one event, but it could be that
     // poll returns the first event only in a single call. To be a bit more
     // lenient we'll poll a couple of times.
     for _ in 0..3 {
-        poll.poll(events, Some(Duration::from_millis(500)))?;
+        poll.poll(events, Some(Duration::from_millis(500)))
+            .expect("unable to poll");
 
         for event in events.iter() {
             let index = expected.iter().position(|expected| expected.matches(event));
@@ -219,63 +129,36 @@ pub fn expect_events(
         }
 
         if expected.is_empty() {
-            return Ok(());
+            return;
         }
     }
 
-    if expected.is_empty() {
-        return Ok(());
-    }
-    {
-        return Err(Error::Other(MioError::ExpectedEvent { expected }));
-    }
+    assert!(
+        expected.is_empty(),
+        "the following expected events were not found: {:?}",
+        expected
+    );
 }
 
-pub fn expect_block(result: std::io::Result<usize>) -> Result<(), Error> {
+pub fn assert_would_block(result: std::io::Result<usize>) {
     match result {
-        Ok(_) => Err(MioError::ExpectedToBlock(None).into()),
-        Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => Ok(()),
-        Err(e) => Err(MioError::ExpectedToBlock(Some(e)).into()),
+        Ok(_) => panic!("unexpected OK result, expected a `WouldBlock` error"),
+        Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => {}
+        Err(e) => panic!("unexpected error result: {}", e),
     }
 }
+
 /// Ensure the entire buffer is written
-pub fn checked_write(port: &mut mio_serial::SerialStream, data: &[u8]) -> Result<(), Error> {
-    let n = port.write(data).map_err(|e| MioError::WriteFailed(e))?;
-    if n == data.len() {
-        Ok(())
-    } else {
-        Err(MioError::ShortWrite {
-            expected: data.len(),
-            actual: n,
-        }
-        .into())
-    }
+pub fn checked_write(port: &mut mio_serial::SerialStream, data: &[u8]) {
+    let n = port.write(data).expect("unable to write to serial port");
+    assert_eq!(n, data.len(), "short write");
 }
 
 /// Ensure the entire buffer is read
-pub fn checked_read(
-    port: &mut mio_serial::SerialStream,
-    data: &mut [u8],
-    expected: &[u8],
-) -> Result<(), Error> {
-    let n = port.read(data).map_err(|e| MioError::ReadFailed(e))?;
-    if n != expected.len() {
-        return Err(MioError::ShortRead {
-            expected: expected.len(),
-            actual: n,
-        }
-        .into());
-    }
-
-    if &data[..n] != expected {
-        return Err(MioError::BadReadData {
-            expected: Vec::from(expected),
-            actual: Vec::from(&data[..n]),
-        }
-        .into());
-    }
-
-    Ok(())
+pub fn checked_read(port: &mut mio_serial::SerialStream, data: &mut [u8], expected: &[u8]) {
+    let n = port.read(data).expect("unable to read from serial port");
+    assert_eq!(n, expected.len(), "short read");
+    assert_eq!(&data[..n], expected);
 }
 
 #[cfg(windows)]
@@ -305,10 +188,9 @@ fn teardown_serial_ports(handle: process::Child) {
     handle.wait().ok();
 }
 
-pub fn with_serial_ports<F, T>(test: F)
+pub fn with_serial_ports<F>(test: F)
 where
-    T: std::error::Error,
-    F: FnOnce(&str, &str) -> Result<(), async_serial_test_helper::Error<T>>,
+    F: FnOnce(&str, &str) + panic::UnwindSafe,
 {
     async_serial_test_helper::with_virtual_serial_ports_setup_fixture(
         setup_serial_ports,

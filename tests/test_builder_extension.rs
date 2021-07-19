@@ -5,12 +5,14 @@ use mio_serial::SerialPortBuilderExt;
 fn test_builder_open_async() {
     // let options = common::setup();
     // let port_name = options.port_names[0].clone();
-    common::with_serial_ports::<_, std::convert::Infallible>(|port, _| {
+    common::with_serial_ports(|port, _| {
         let baud_rate = 9600;
         let builder = mio_serial::new(port, baud_rate);
 
-        let stream = builder.open_native_async()?;
+        let stream = builder
+            .open_native_async()
+            .expect("unable to open serial port");
 
-        async_serial_test_helper::expect_baud_rate(&stream, baud_rate)
+        async_serial_test_helper::assert_baud_rate(&stream, baud_rate)
     })
 }

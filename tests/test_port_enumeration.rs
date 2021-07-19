@@ -19,12 +19,15 @@ impl std::error::Error for PortNotFound {}
 fn test_port_enumeration() {
     common::with_serial_ports(|port_a, port_b| {
         let names = [port_a, port_b];
-        let ports = mio_serial::available_ports()?;
+        let ports = mio_serial::available_ports().expect("unable to enumerate serial ports");
         for name in names.iter() {
-            ports.iter().find(|&info| info.port_name == *name).ok_or(
-                async_serial_test_helper::Error::Other(PortNotFound((*name).to_owned())),
-            )?;
+            ports.iter().find(|&info| info.port_name == *name).expect(
+                format!(
+                    "unable to find serial port named {} in enumerated ports",
+                    name
+                )
+                .as_str(),
+            );
         }
-        Ok(())
     })
 }
