@@ -15,11 +15,11 @@ use std::thread;
 
 /// Default serial port names used for testing
 #[cfg(unix)]
-const DEFAULT_PORT_NAMES: &'static str = "/tty/USB0;/tty/USB1";
+const DEFAULT_TEST_PORT_NAMES: &'static str = "/tty/USB0;/tty/USB1";
 
 /// Default serial port names used for testing
 #[cfg(windows)]
-const DEFAULT_PORT_NAMES: &'static str = "COM1;COM2";
+const DEFAULT_TEST_PORT_NAMES: &'static str = "COM1;COM2";
 
 #[derive(Debug)]
 pub struct Readiness(usize);
@@ -171,73 +171,65 @@ pub fn checked_read(port: &mut mio_serial::SerialStream, data: &mut [u8], expect
     assert_eq!(&data[..n], expected);
 }
 
-/// Virtual serial ports used in testing on windows are provided by com0com
-/// before any cargo functions are invoked.  No special seteup required
-#[cfg(windows)]
-fn setup_serial_ports(_: &str, _: &str) {}
-
-/// Virtual serial ports used in testing on unix are provided by socat.
-/// This method will create a pair of of pseudo tty's in a child process
-#[cfg(unix)]
-fn setup_serial_ports(port_a: &str, port_b: &str) -> process::Child {
-    let device_a = format!("PTY,link={}", port_a);
-    let device_b = format!("PTY,link={}", port_b);
-    let handle = process::Command::new("socat")
-        .arg(device_a.as_str())
-        .arg(device_b.as_str())
-        .spawn()
-        .expect("Unable to start socat process");
-    println!("Socat started w/ id: '{}'", handle.id());
-    thread::sleep(Duration::from_millis(500));
-    handle
+pub struct Fixture {
+    #[cfg(unix)]
+    process: process::Child,
+    pub port_a: &'static str,
+    pub port_b: &'static str,
 }
 
-/// No special cleanup is needed for the virtual serial ports created by
-/// com0com
-#[cfg(windows)]
-fn teardown_serial_ports(_: ()) {}
-
-/// kills the socat process to close the virtual serial ports.
 #[cfg(unix)]
-fn teardown_serial_ports(handle: process::Child) {
-    let mut handle = handle;
-    handle.kill().ok();
-    handle.wait().ok();
+impl Drop for Fixture {
+    fn drop(&mut self) {
+        log::trace!("stopping socat process (id: {})...", self.process.id());
+
+        self.process.kill().ok();
+        thread::sleep(Duration::from_millis(250));
+        log::trace!("removing link: {}", self.port_a);
+        std::fs::remove_file(self.port_a).ok();
+        log::trace!("removing link: {}", self.port_b);
+        std::fs::remove_file(self.port_b).ok();
+    }
 }
 
-/// Run a test with the two provided serial port names
-///
-/// Provide a closure that accepts two &str representing the names of two serial ports
-/// for testing.  Test failures should panic!
-///
-/// Serial port names are determined from the `TEST_PORT_NAMES` environment variable if
-/// present.  Defaults to `DEFAULT_PORT_NAMES`
-pub fn with_serial_ports<F>(test: F)
-where
-    F: FnOnce(&str, &str) + panic::UnwindSafe,
-{
-    let port_names: Vec<String> = std::option_env!("TEST_PORT_NAMES")
-        .unwrap_or(DEFAULT_PORT_NAMES)
+impl Fixture {
+    #[cfg(unix)]
+    pub fn new(port_a: &'static str, port_b: &'static str) -> Self {
+        let args = [
+            format!("PTY,link={}", port_a),
+            format!("PTY,link={}", port_b),
+        ];
+        log::trace!("starting process: socat {} {}", args[0], args[1]);
+
+        let process = process::Command::new("socat")
+            .args(&args)
+            .spawn()
+            .expect("unable to spawn socat process");
+        log::trace!(".... done! (pid: {:?})", process.id());
+
+        thread::sleep(Duration::from_millis(500));
+
+        Self {
+            process,
+            port_a,
+            port_b,
+        }
+    }
+
+    #[cfg(not(unix))]
+    pub fn new(port_a: &'static str, port_b: &'static str) -> Self {
+        Self { port_a, port_b }
+    }
+}
+
+pub fn setup_virtual_serial_ports() -> Fixture {
+    let port_names: Vec<&str> = std::option_env!("TEST_PORT_NAMES")
+        .unwrap_or(DEFAULT_TEST_PORT_NAMES)
         .split(';')
-        .map(|s| s.to_owned())
         .collect();
 
-    if port_names.len() < 2 {
-        panic!("Expected two port names, found {}", port_names.len())
-    }
-
-    let port_a = port_names[0].as_str();
-    let port_b = port_names[1].as_str();
-
-    let fixture = setup_serial_ports(port_a, port_b);
-
-    let result = std::panic::catch_unwind(|| test(port_a, port_b));
-
-    teardown_serial_ports(fixture);
-
-    if let Err(e) = result {
-        panic::resume_unwind(e);
-    }
+    assert_eq!(port_names.len(), 2);
+    Fixture::new(port_names[0], port_names[1])
 }
 
 /// Assert serial port baud rate matches expected value.

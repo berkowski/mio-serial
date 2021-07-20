@@ -27,6 +27,9 @@ features = ["os-poll", "os-ext"]
 version = "4"
 default-features = false
 
+[dependencies.log]
+version = "0.4"
+
 [target.'cfg(unix)'.dependencies]
 nix = "0.22"
 
