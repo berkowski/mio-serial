@@ -1,5 +1,10 @@
 mod common;
+use mio::{Interest, Token};
 use mio_serial::SerialPortBuilderExt;
+use std::io::{Read, Write};
+
+const TOKEN1: Token = Token(0);
+const TOKEN2: Token = Token(1);
 
 #[test]
 fn test_builder_open_async() {
@@ -64,15 +69,9 @@ fn test_port_enumeration() {
 fn test_read_write_pair() {
     let baud_rate = 38400;
 
-    use mio::{Interest, Token};
-    use std::io::{Read, Write};
-
     const DATA1: &[u8] = b"Here is an example string";
     const DATA2: &[u8] = b"And here is a reply to the example string";
-    //const DATA1_LEN: usize = DATA1.len();
     const DEFAULT_BUF_SIZE: usize = 64;
-    const TOKEN1: Token = Token(0);
-    const TOKEN2: Token = Token(1);
 
     let fixture = common::setup_virtual_serial_ports();
     let (port_a, port_b) = (fixture.port_a, fixture.port_b);
@@ -155,4 +154,116 @@ fn test_read_write_pair() {
     common::checked_read(&mut port_1, &mut buf, DATA2);
     // .. before blocking again.
     common::assert_would_block(port_1.read(&mut buf));
+}
+#[test]
+fn test_try_clone_native() {
+    const DATA1: &[u8] = b"Here is an example string";
+    //const DATA2: &[u8] = b"And here is a reply to the example string";
+    const DEFAULT_BUF_SIZE: usize = 64;
+    const TOKEN3: Token = Token(2);
+
+    let baud_rate = 9600;
+    let fixture = common::setup_virtual_serial_ports();
+    let (mut poll, mut events) = common::init_with_poll();
+
+    let builder_a = mio_serial::new(fixture.port_a, baud_rate);
+    let builder_b = mio_serial::new(fixture.port_b, baud_rate);
+
+    let mut sender =
+        mio_serial::SerialStream::open(&builder_a).expect("unable to open serial port");
+    let mut receiver =
+        mio_serial::SerialStream::open(&builder_b).expect("unable to open serial port");
+    let mut cloned_receiver = receiver
+        .try_clone_native()
+        .expect("unable to clone serial port");
+
+    poll.registry()
+        .register(&mut sender, TOKEN1, Interest::WRITABLE | Interest::READABLE)
+        .expect("unable to register port as readable and writable");
+    poll.registry()
+        .register(
+            &mut receiver,
+            TOKEN2,
+            Interest::READABLE | Interest::WRITABLE,
+        )
+        .expect("unable to register port as readable and writable");
+
+    poll.registry()
+        .register(
+            &mut cloned_receiver,
+            TOKEN3,
+            Interest::READABLE | Interest::WRITABLE,
+        )
+        .expect("unable to register port as readable and writable");
+    let mut buf = [0u8; DEFAULT_BUF_SIZE];
+
+    common::expect_events(
+        &mut poll,
+        &mut events,
+        vec![common::ExpectEvent::new(TOKEN1, Interest::WRITABLE)],
+    );
+
+    common::assert_would_block(receiver.read(&mut buf).into());
+    common::assert_would_block(cloned_receiver.read(&mut buf).into());
+
+    // write data on port 1
+    common::checked_write(&mut sender, DATA1);
+    sender.flush().expect("unable to flush serial port");
+
+    // port 2 should now be readable
+    common::expect_events(
+        &mut poll,
+        &mut events,
+        vec![common::ExpectEvent::new(TOKEN2, Interest::READABLE)],
+    );
+
+    common::expect_events(
+        &mut poll,
+        &mut events,
+        vec![common::ExpectEvent::new(TOKEN3, Interest::READABLE)],
+    );
+
+    // read data on port 2
+    common::checked_read(&mut receiver, &mut buf, DATA1);
+
+    // port 2 should then return to blocking
+    common::assert_would_block(receiver.read(&mut buf));
+    // port 2 should then return to blocking
+    common::assert_would_block(cloned_receiver.read(&mut buf));
+
+    // port 1 should be blocking on read for the reply
+    common::assert_would_block(sender.read(&mut buf));
+
+    common::expect_events(
+        &mut poll,
+        &mut events,
+        vec![common::ExpectEvent::new(TOKEN1, Interest::WRITABLE)],
+    );
+
+    // write data on port 1
+    common::checked_write(&mut sender, DATA1);
+    sender.flush().expect("unable to flush serial port");
+
+    // port 2 should now be readable
+    common::expect_events(
+        &mut poll,
+        &mut events,
+        vec![common::ExpectEvent::new(TOKEN2, Interest::READABLE)],
+    );
+
+    common::expect_events(
+        &mut poll,
+        &mut events,
+        vec![common::ExpectEvent::new(TOKEN3, Interest::READABLE)],
+    );
+
+    // read data on port 2
+    common::checked_read(&mut cloned_receiver, &mut buf, DATA1);
+
+    // port 2 should then return to blocking
+    common::assert_would_block(cloned_receiver.read(&mut buf));
+    common::assert_would_block(receiver.read(&mut buf));
+
+    // port 1 should be blocking on read for the reply
+    common::assert_would_block(sender.read(&mut buf));
 }
