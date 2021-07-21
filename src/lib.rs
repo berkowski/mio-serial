@@ -61,11 +61,15 @@ mod os_prelude {
     pub use std::path::Path;
     pub use std::ptr;
     pub use std::time::Duration;
+    pub use winapi::shared::minwindef::TRUE;
     pub use winapi::um::commapi::SetCommTimeouts;
     pub use winapi::um::fileapi::*;
-    pub use winapi::um::handleapi::INVALID_HANDLE_VALUE;
+    pub use winapi::um::handleapi::{DuplicateHandle, INVALID_HANDLE_VALUE};
+    pub use winapi::um::processthreadsapi::GetCurrentProcess;
     pub use winapi::um::winbase::{COMMTIMEOUTS, FILE_FLAG_OVERLAPPED};
-    pub use winapi::um::winnt::{FILE_ATTRIBUTE_NORMAL, GENERIC_READ, GENERIC_WRITE, HANDLE};
+    pub use winapi::um::winnt::{
+        DUPLICATE_SAME_ACCESS, FILE_ATTRIBUTE_NORMAL, GENERIC_READ, GENERIC_WRITE, HANDLE,
+    };
 }
 use os_prelude::*;
 
@@ -178,12 +182,33 @@ impl SerialStream {
         }
         #[cfg(windows)]
         {
-            let handle = cloned_native.as_raw_handle();
-            let pipe = unsafe { NamedPipe::from_raw_handle(handle) };
-            Ok(Self {
-                inner: mem::ManuallyDrop::new(cloned_native),
-                pipe,
-            })
+            // Same procedure as used in serialport-rs for duplicating raw handles
+            // https://docs.microsoft.com/en-us/windows/win32/api/handleapi/nf-handleapi-duplicatehandle
+            // states that it can be used as well for pipes created with CreateNamedPipe as well
+            let pipe_handle = self.pipe.as_raw_handle();
+
+            let process_handle: HANDLE = unsafe { GetCurrentProcess() };
+            let mut cloned_pipe_handle: HANDLE = INVALID_HANDLE_VALUE;
+            unsafe {
+                DuplicateHandle(
+                    process_handle,
+                    pipe_handle,
+                    process_handle,
+                    &mut cloned_pipe_handle,
+                    0,
+                    TRUE,
+                    DUPLICATE_SAME_ACCESS,
+                );
+                if cloned_pipe_handle != INVALID_HANDLE_VALUE {
+                    let cloned_pipe = unsafe { NamedPipe::from_raw_handle(cloned_pipe_handle) };
+                    Ok(Self {
+                        inner: mem::ManuallyDrop::new(cloned_native),
+                        pipe: cloned_pipe,
+                    })
+                } else {
+                    Err(StdIoError::last_os_error().into())
+                }
+            }
         }
     }
 }
