@@ -37,7 +37,7 @@ pub use serialport::new;
 
 use mio::{event::Source, Interest, Registry, Token};
 use std::convert::TryFrom;
-use std::io::{Error as StdIoError, Result as StdIoResult};
+use std::io::{Error as StdIoError, ErrorKind as StdIoErrorKind, Result as StdIoResult};
 use std::time::Duration;
 
 #[cfg(unix)]
@@ -45,7 +45,6 @@ mod os_prelude {
     pub use mio::unix::SourceFd;
     pub use nix::{self, libc};
     pub use serialport::TTYPort as NativeBlockingSerialPort;
-    pub use std::io::ErrorKind as StdIoErrorKind;
     pub use std::os::unix::prelude::*;
 }
 
@@ -159,6 +158,7 @@ impl SerialStream {
     pub fn exclusive(&self) -> bool {
         self.inner.exclusive()
     }
+
     /// Attempts to clone the `SerialPort`. This allow you to write and read simultaneously from the
     /// same serial connection.
     ///
@@ -171,6 +171,21 @@ impl SerialStream {
     /// # Errors
     ///
     /// This function returns an error if the serial port couldn't be cloned.
+    ///
+    /// # DON'T USE THIS AS-IS
+    ///
+    /// This logic has never really completely worked.  Cloned file descriptors in asynchronous
+    /// code is a semantic minefield.  Are you cloning the file descriptor?  Are you cloning the
+    /// event flags on the file descriptor?  Both?  It's a bit of a mess even within one OS,
+    /// let alone across multiple OS's
+    ///
+    /// Maybe it can be done with more work, but until a clear use-case is required (or mio/tokio
+    /// gets an equivalent of the unix `AsyncFd` for async file handles, see
+    /// https://github.com/tokio-rs/tokio/issues/3781 and
+    /// https://github.com/tokio-rs/tokio/pull/3760#issuecomment-839854617) I would rather not
+    /// have any enabled code over a kind-of-works-maybe impl.  So I'll leave this code here
+    /// for now but hard-code it disabled.
+    #[cfg(never)]
     pub fn try_clone_native(&self) -> Result<SerialStream> {
         // This works so long as the underlying serialport-rs method doesn't do anything but
         // duplicate the low-level file descriptor.  This is the case as of serialport-rs:4.0.1
@@ -478,8 +493,29 @@ impl crate::SerialPort for SerialStream {
     ///
     /// This function returns an error if the serial port couldn't be cloned.
     #[inline(always)]
+    #[cfg(never)]
     fn try_clone(&self) -> crate::Result<Box<dyn crate::SerialPort>> {
         Ok(Box::new(self.try_clone_native()?))
+    }
+
+    /// Cloning is not supported for SerialStream objects
+    ///
+    /// This logic has never really completely worked.  Cloned file descriptors in asynchronous
+    /// code is a semantic minefield.  Are you cloning the file descriptor?  Are you cloning the
+    /// event flags on the file descriptor?  Both?  It's a bit of a mess even within one OS,
+    /// let alone across multiple OS's
+    ///
+    /// Maybe it can be done with more work, but until a clear use-case is required (or mio/tokio
+    /// gets an equivalent of the unix `AsyncFd` for async file handles, see
+    /// https://github.com/tokio-rs/tokio/issues/3781 and
+    /// https://github.com/tokio-rs/tokio/pull/3760#issuecomment-839854617) I would rather not
+    /// have any code available over a kind-of-works-maybe impl.  So I'll leave this code here
+    /// for now but hard-code it disabled.
+    fn try_clone(&self) -> crate::Result<Box<dyn crate::SerialPort>> {
+        Err(crate::Error::new(
+            crate::ErrorKind::Io(StdIoErrorKind::Unsupported),
+            "cloning SerialStream is not supported",
+        ))
     }
 
     /// Start transmitting a break

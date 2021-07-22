@@ -8,7 +8,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [4.0.0-beta3] UNRELEASED
 
 ### Added
-- `try_clone` and `try_clone_native` methods for `SerialStream`
 - Some logging hooks for debugging
 
 ### Changed
