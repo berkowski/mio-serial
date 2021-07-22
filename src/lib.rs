@@ -105,6 +105,7 @@ impl SerialStream {
     /// let serial = SerialStream::open(path, 9600).unwrap();
     /// ```
     pub fn open(builder: &crate::SerialPortBuilder) -> crate::Result<Self> {
+        log::debug!("opening serial port in synchronous blocking mode");
         let port = NativeBlockingSerialPort::open(builder)?;
         Self::try_from(port)
     }
@@ -498,6 +499,11 @@ impl TryFrom<NativeBlockingSerialPort> for SerialStream {
     type Error = crate::Error;
     #[cfg(unix)]
     fn try_from(port: NativeBlockingSerialPort) -> std::result::Result<Self, Self::Error> {
+        log::debug!(
+            "switching {} to asynchronous mode",
+            port.name().unwrap_or(String::from("<UNKNOWN>"))
+        );
+        log::debug!("setting VMIN = 1");
         use nix::sys::termios::{self, SetArg, SpecialCharacterIndices};
         let mut t = termios::tcgetattr(port.as_raw_fd()).map_err(map_nix_error)?;
 
@@ -506,6 +512,7 @@ impl TryFrom<NativeBlockingSerialPort> for SerialStream {
         termios::tcsetattr(port.as_raw_fd(), SetArg::TCSANOW, &t).map_err(map_nix_error)?;
 
         // Set the O_NONBLOCK flag.
+        log::debug!("setting O_NONBLOCK flag");
         let flags = unsafe { libc::fcntl(port.as_raw_fd(), libc::F_GETFL) };
         if flags < 0 {
             return Err(StdIoError::last_os_error().into());
@@ -518,6 +525,11 @@ impl TryFrom<NativeBlockingSerialPort> for SerialStream {
     }
     #[cfg(windows)]
     fn try_from(port: NativeBlockingSerialPort) -> std::result::Result<Self, Self::Error> {
+        log::debug!(
+            "switching {} to asynchronous mode",
+            port.name().unwrap_or(String::from("<UNKNOWN>"))
+        );
+        log::debug!("reading serial port settings");
         let name = port.name().ok_or(crate::Error::new(
             crate::ErrorKind::NoDevice,
             "Empty device name",
@@ -534,6 +546,7 @@ impl TryFrom<NativeBlockingSerialPort> for SerialStream {
         path.push(0);
 
         // Drop the port object, we'll reopen the file path as a raw handle
+        log::debug!("closing synchronous port to re-open in FILE_FLAG_OVERLAPPED mode");
         mem::drop(port);
 
         let handle = unsafe {
@@ -549,6 +562,7 @@ impl TryFrom<NativeBlockingSerialPort> for SerialStream {
         };
 
         if handle == INVALID_HANDLE_VALUE {
+            log::error!("unable to open new async file handle");
             return Err(crate::Error::from(StdIoError::last_os_error()));
         }
         let handle = unsafe { mem::transmute(handle) };
@@ -567,6 +581,7 @@ impl TryFrom<NativeBlockingSerialPort> for SerialStream {
         let mut com_port =
             mem::ManuallyDrop::new(unsafe { serialport::COMPort::from_raw_handle(handle) });
 
+        log::debug!("re-setting serial port parameters to original values from synchronous port");
         com_port.set_baud_rate(baud)?;
         com_port.set_parity(parity)?;
         com_port.set_data_bits(data_bits)?;

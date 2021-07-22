@@ -4,6 +4,7 @@ use mio::{event::Event, Events, Interest, Poll, Token};
 use std::io::{Read, Write};
 use std::ops::BitOr;
 use std::panic;
+use std::sync::Once;
 use std::time::Duration;
 
 use serialport::SerialPort;
@@ -12,6 +13,8 @@ use serialport::SerialPort;
 use std::process;
 #[cfg(unix)]
 use std::thread;
+
+static LOGGING_INIT: Once = Once::new();
 
 /// Default serial port names used for testing
 #[cfg(unix)]
@@ -195,6 +198,7 @@ impl Drop for Fixture {
 impl Fixture {
     #[cfg(unix)]
     pub fn new(port_a: &'static str, port_b: &'static str) -> Self {
+        LOGGING_INIT.call_once(|| env_logger::init());
         let args = [
             format!("PTY,link={}", port_a),
             format!("PTY,link={}", port_b),
@@ -218,6 +222,7 @@ impl Fixture {
 
     #[cfg(not(unix))]
     pub fn new(port_a: &'static str, port_b: &'static str) -> Self {
+        LOGGING_INIT.call_once(|| env_logger::init());
         Self { port_a, port_b }
     }
 }

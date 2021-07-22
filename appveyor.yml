@@ -92,5 +92,7 @@ build: false
 # Don't run tests, they require actual serial ports and will fail on CI
 test_script:
   - cmd: set TEST_PORT_NAMES=COM10;COM11
+  - cmd: set RUST_LOG=trace
   - sh: export TEST_PORT_NAMES='/tmp/ttyS0;/tmp/ttyS1'
+  - sh: set RUST_LOG=trace
   - cargo test -j1 -- --test-threads=1

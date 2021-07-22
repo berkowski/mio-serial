@@ -36,5 +36,8 @@ nix = "0.22"
 [target.'cfg(windows)'.dependencies]
 winapi = { version = "0.3", features = ["commapi", "handleapi", "winbase"] }
 
+[dev-dependencies.env_logger]
+version = "0.9"
+
 [[example]]
 name = "read_serialport"
