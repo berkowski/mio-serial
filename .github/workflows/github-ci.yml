@@ -1,0 +1,154 @@
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: '0 8 15 * *'
+jobs:
+  cargo-test-linux:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        rust:
+          - stable
+          - beta
+          # - nightly
+    env:
+      TEST_PORT_A: /tmp/ttyS10
+      TEST_PORT_B: /tmp/ttyS11
+      RUST_LOG: trace
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: ${{ matrix.rust }}
+          override: true
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v1
+      - name: install socat
+        run: |
+          sudo apt-get update
+          sudo apt-get install socat -y
+          socat -V
+      - name: cargo test
+        run: cargo test -j1 -- --test-threads=1
+        env:
+          TEST_PORT_NAMES: ${{ env.TEST_PORT_A }};${{ env.TEST_PORT_B }}
+  cargo-test-macOS:
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        rust:
+          - stable
+          - beta
+          # - nightly
+    env:
+      TEST_PORT_A: /tmp/ttyS10
+      TEST_PORT_B: /tmp/ttyS11
+      RUST_LOG: trace
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: ${{ matrix.rust }}
+          override: true
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v1
+      - name: install socat
+        run: |
+          brew install socat
+          socat -V
+        env:
+          HOMEBREW_NO_AUTO_UPDATE: 1
+      # Github Actions don't support 'allow-failures': https://github.com/actions/toolkit/issues/399
+      # Until it does then we'll just have to test building on OSX in the meantime
+      # - name: cargo test
+      #   run: cargo test -j1 -- --test-threads=1
+      #   env:
+      #     TEST_PORT_NAMES: ${{ env.TEST_PORT_A }};${{ env.TEST_PORT_B }}
+      - name: cargo build
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+  cargo-test-windows:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        rust:
+          - stable
+          - beta
+          # - nightly
+    env:
+      TEST_PORT_A: COM10
+      TEST_PORT_B: COM11
+      RUST_LOG: trace
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: ${{ matrix.rust }}
+          override: true
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v1
+      - uses: ilammy/msvc-dev-cmd@v1
+      - name: install com0com
+        run: |
+          CertMgr.exe /add com0com.cer /s /r localMachine root
+          CertMgr.exe /add com0com.cer /s /r localMachine trustedpublisher
+          .\setup_com0com_W7_x64_signed.exe /S
+        working-directory: .github
+      - name: setup com0com
+        run: .\setupc.exe install PortName=${{ env.TEST_PORT_A }},EmuBR=yes PortName=${{ env.TEST_PORT_B }},EmuBR=yes
+        working-directory: C:\Program Files (x86)\com0com
+      - name: cargo test
+        run: cargo test -j1 -- --test-threads=1
+        env:
+          TEST_PORT_NAMES: ${{ env.TEST_PORT_A }};${{ env.TEST_PORT_B }}
+  cargo-fmt:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        rust:
+          - stable
+        os:
+          - ubuntu-latest
+          - windows-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: ${{ matrix.rust }}
+          override: true
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v1
+      - name: check format
+        uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: -- --check
+  cargo-clippy:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        rust:
+          - stable
+        os:
+          - ubuntu-latest
+          - windows-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: ${{ matrix.rust }}
+          override: true
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v1
+      - name: cargo clippy
+        uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+          args: -- -D warnings
