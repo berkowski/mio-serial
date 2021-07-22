@@ -627,7 +627,7 @@ impl TryFrom<NativeBlockingSerialPort> for SerialStream {
 
         Ok(Self {
             inner: com_port,
-            pipe: pipe,
+            pipe,
         })
     }
 }
