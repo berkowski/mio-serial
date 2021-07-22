@@ -48,7 +48,8 @@ to a semi-colon delimited string with the two serial port names.  The default va
 - For Unix: `TEST_PORT_NAMES=/dev/ttyUSB0;/dev/ttyUSB1`
 - For Windows: `TEST_PORT_NAMES=COM1;COM2`
 
-**IMPORTANT** To run tests you need to pass enable the `test` feature.  The typical command is:
+**IMPORTANT** To prevent multiple tests from talking to the same ports at the same time make sure to limit the number
+of test threads to 1 using:
 
 ```sh
 cargo test -j1 -- --test-threads=1
