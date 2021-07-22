@@ -537,7 +537,7 @@ impl TryFrom<NativeBlockingSerialPort> for SerialStream {
     fn try_from(port: NativeBlockingSerialPort) -> std::result::Result<Self, Self::Error> {
         log::debug!(
             "switching {} to asynchronous mode",
-            port.name().unwrap_or(String::from("<UNKNOWN>"))
+            port.name().unwrap_or_else(|| String::from("<UNKNOWN>"))
         );
         log::debug!("setting VMIN = 1");
         use nix::sys::termios::{self, SetArg, SpecialCharacterIndices};
@@ -682,9 +682,7 @@ mod io {
         }
 
         fn flush(&mut self) -> StdIoResult<()> {
-            uninterruptibly!(
-                termios::tcdrain(self.inner.as_raw_fd()).map_err(|e| StdIoError::from(e))
-            )
+            uninterruptibly!(termios::tcdrain(self.inner.as_raw_fd()).map_err(StdIoError::from))
         }
     }
 
@@ -718,9 +716,7 @@ mod io {
         }
 
         fn flush(&mut self) -> StdIoResult<()> {
-            uninterruptibly!(
-                termios::tcdrain(self.inner.as_raw_fd()).map_err(|e| StdIoError::from(e))
-            )
+            uninterruptibly!(termios::tcdrain(self.inner.as_raw_fd()).map_err(StdIoError::from))
         }
     }
 }
