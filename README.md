@@ -1,6 +1,6 @@
 # mio-serial: A serial port IO library MIO.
 
-[![Build status](https://ci.appveyor.com/api/projects/status/1j0fy1f5k7h14x95/branch/master?svg=true)](https://ci.appveyor.com/project/berkowski/mio-serial/branch/master)
+[![Build status](https://github.com/berkowski/mio-serial/actions/workflows/github-ci.yml/badge.svg)](https://github.com/berkowski/mio-serial/actions)
 [![crates.io](http://shields.io/crates/v/mio-serial)](https://crates.io/crates/mio-serial)
 [![docs.rs](https://docs.rs/mio-serial/badge.svg)](https://docs.rs/mio-serial)
 
