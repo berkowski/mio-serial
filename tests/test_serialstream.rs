@@ -155,12 +155,12 @@ fn test_read_write_pair() {
     // .. before blocking again.
     common::assert_would_block(port_1.read(&mut buf));
 }
+
+// Same as test_send_recv but use a cloned receiver
 #[test]
 fn test_try_clone_native() {
     const DATA1: &[u8] = b"Here is an example string";
-    //const DATA2: &[u8] = b"And here is a reply to the example string";
     const DEFAULT_BUF_SIZE: usize = 64;
-    const TOKEN3: Token = Token(2);
 
     let baud_rate = 9600;
     let fixture = common::setup_virtual_serial_ports();
@@ -173,10 +173,8 @@ fn test_try_clone_native() {
         mio_serial::SerialStream::open(&builder_a).expect("unable to open serial port");
     let mut receiver =
         mio_serial::SerialStream::open(&builder_b).expect("unable to open serial port");
-    let mut cloned_receiver = receiver
-        .try_clone_native()
-        .expect("unable to clone serial port");
 
+    // register the two ports
     poll.registry()
         .register(&mut sender, TOKEN1, Interest::WRITABLE | Interest::READABLE)
         .expect("unable to register port as readable and writable");
@@ -188,13 +186,14 @@ fn test_try_clone_native() {
         )
         .expect("unable to register port as readable and writable");
 
-    poll.registry()
-        .register(
-            &mut cloned_receiver,
-            TOKEN3,
-            Interest::READABLE | Interest::WRITABLE,
-        )
-        .expect("unable to register port as readable and writable");
+    // then clone one of them
+    let mut cloned_receiver = receiver
+        .try_clone_native()
+        .expect("unable to clone serial port");
+
+    // and drop the original
+    std::mem::drop(receiver);
+
     let mut buf = [0u8; DEFAULT_BUF_SIZE];
 
     common::expect_events(
@@ -203,7 +202,6 @@ fn test_try_clone_native() {
         vec![common::ExpectEvent::new(TOKEN1, Interest::WRITABLE)],
     );
 
-    common::assert_would_block(receiver.read(&mut buf).into());
     common::assert_would_block(cloned_receiver.read(&mut buf).into());
 
     // write data on port 1
@@ -217,28 +215,14 @@ fn test_try_clone_native() {
         vec![common::ExpectEvent::new(TOKEN2, Interest::READABLE)],
     );
 
-    common::expect_events(
-        &mut poll,
-        &mut events,
-        vec![common::ExpectEvent::new(TOKEN3, Interest::READABLE)],
-    );
-
     // read data on port 2
-    common::checked_read(&mut receiver, &mut buf, DATA1);
+    common::checked_read(&mut cloned_receiver, &mut buf, DATA1);
 
-    // port 2 should then return to blocking
-    common::assert_would_block(receiver.read(&mut buf));
     // port 2 should then return to blocking
     common::assert_would_block(cloned_receiver.read(&mut buf));
 
     // port 1 should be blocking on read for the reply
     common::assert_would_block(sender.read(&mut buf));
-
-    common::expect_events(
-        &mut poll,
-        &mut events,
-        vec![common::ExpectEvent::new(TOKEN1, Interest::WRITABLE)],
-    );
 
     // write data on port 1
     common::checked_write(&mut sender, DATA1);
@@ -251,18 +235,11 @@ fn test_try_clone_native() {
         vec![common::ExpectEvent::new(TOKEN2, Interest::READABLE)],
     );
 
-    common::expect_events(
-        &mut poll,
-        &mut events,
-        vec![common::ExpectEvent::new(TOKEN3, Interest::READABLE)],
-    );
-
     // read data on port 2
     common::checked_read(&mut cloned_receiver, &mut buf, DATA1);
 
     // port 2 should then return to blocking
     common::assert_would_block(cloned_receiver.read(&mut buf));
-    common::assert_would_block(receiver.read(&mut buf));
 
     // port 1 should be blocking on read for the reply
     common::assert_would_block(sender.read(&mut buf));
