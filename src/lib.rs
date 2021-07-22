@@ -563,13 +563,12 @@ impl TryFrom<NativeBlockingSerialPort> for SerialStream {
     fn try_from(port: NativeBlockingSerialPort) -> std::result::Result<Self, Self::Error> {
         log::debug!(
             "switching {} to asynchronous mode",
-            port.name().unwrap_or(String::from("<UNKNOWN>"))
+            port.name().unwrap_or_else(|| String::from("<UNKNOWN>"))
         );
         log::debug!("reading serial port settings");
-        let name = port.name().ok_or(crate::Error::new(
-            crate::ErrorKind::NoDevice,
-            "Empty device name",
-        ))?;
+        let name = port
+            .name()
+            .ok_or_else(|| crate::Error::new(crate::ErrorKind::NoDevice, "Empty device name"))?;
         let baud = port.baud_rate()?;
         let parity = port.parity()?;
         let data_bits = port.data_bits()?;
