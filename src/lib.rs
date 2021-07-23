@@ -513,7 +513,7 @@ impl crate::SerialPort for SerialStream {
     /// for now but hard-code it disabled.
     fn try_clone(&self) -> crate::Result<Box<dyn crate::SerialPort>> {
         Err(crate::Error::new(
-            crate::ErrorKind::Io(StdIoErrorKind::Unsupported),
+            crate::ErrorKind::Io(StdIoErrorKind::Other),
             "cloning SerialStream is not supported",
         ))
     }

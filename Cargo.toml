@@ -1,6 +1,6 @@
 [package]
 name = "mio-serial"
-version = "4.0.0-beta3"
+version = "4.0.0-beta4"
 authors = ["Zac Berkowitz <zac.berkowitz@gmail.com>"]
 description = "A serial port implementation for mio"
 license = "MIT"
@@ -11,6 +11,9 @@ readme = "README.md"
 keywords = ["rs232", "serial", "mio"]
 categories = ["asynchronous", "hardware-support"]
 edition = "2018"
+
+[package.metadata]
+msrv = "1.41.0"    # Used by cargo-msrv
 
 [badges]
 maintenance = { status = "looking-for-maintainer" }
