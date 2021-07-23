@@ -1,8 +1,15 @@
-# mio-serial: A serial port IO library MIO.
+[![Crates.io][crates-badge]][crates-url]
+[![MIT licensed][mit-badge]][mit-url]
+[![Build Status][actions-badge]][actions-url]
 
-[![Build status](https://github.com/berkowski/mio-serial/actions/workflows/github-ci.yml/badge.svg)](https://github.com/berkowski/mio-serial/actions)
-[![crates.io](http://shields.io/crates/v/mio-serial)](https://crates.io/crates/mio-serial)
-[![docs.rs](https://docs.rs/mio-serial/badge.svg)](https://docs.rs/mio-serial)
+[crates-badge]: https://img.shields.io/crates/v/mio-serial.svg
+[crates-url]: https://crates.io/crates/mio-serial
+[mit-badge]: https://img.shields.io/badge/license-MIT-blue.svg
+[mit-url]: https://github.com/berkowski/mio-serial/blob/master/LICENSE
+[actions-badge]: https://github.com/berkowski/mio-serial/actions/workflows/github-ci/badge.svg
+[actions-url]: https://github.com/berkowski/mio-serial/actions?query=workflow%3Agithub-ci+branch%3Amaster
+
+# mio-serial: A serial port IO library MIO.
 
 mio-serial provides a serial port implementation using [mio](https://github.com/carllerche/mio).
 
@@ -16,7 +23,7 @@ Add `mio-serial` to you `Cargo.toml`:
 
 ```toml
 [dependencies]
-mio-serial = "4"
+mio-serial = "4.0.0-beta4"
 ```
 
 Then add this to your crate root:
