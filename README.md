@@ -6,7 +6,7 @@
 [crates-url]: https://crates.io/crates/mio-serial
 [mit-badge]: https://img.shields.io/badge/license-MIT-blue.svg
 [mit-url]: https://github.com/berkowski/mio-serial/blob/master/LICENSE
-[actions-badge]: https://github.com/berkowski/mio-serial/actions/workflows/github-ci/badge.svg
+[actions-badge]: https://github.com/berkowski/mio-serial/actions/workflows/github-ci.yml/badge.svg
 [actions-url]: https://github.com/berkowski/mio-serial/actions?query=workflow%3Agithub-ci+branch%3Amaster
 
 # mio-serial: A serial port IO library MIO.
