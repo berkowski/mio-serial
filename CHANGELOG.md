@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [4.0.0-beta4] UNRELEASED
+
+### Added
+- Check in CI tests for building against the MSRV (currently `1.41.0`)
+
+### Changed
+- Error returned from `SerialPort::try_clone` changed back to `std::io::ErrorKind::Other` 
+  (had switched to `std::io::ErrorKind::Unsupported`).  `Unsupported` requires MSRV of `1.53`
+  which is too high. (fix [#27](https://github.com/berkowski/mio-serial/issues/27))
+  
 ## [4.0.0-beta3] 2021-07-22
 
 ### Added
