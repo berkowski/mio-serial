@@ -1,6 +1,6 @@
 [package]
 name = "mio-serial"
-version = "4.0.0-beta4"
+version = "5.0.0"
 authors = ["Zac Berkowitz <zac.berkowitz@gmail.com>"]
 description = "A serial port implementation for mio"
 license = "MIT"

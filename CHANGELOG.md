@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [5.0.0] 2021-08-08
+
+Final release of version 5.0.  No code changes since the previous 4.0.0-beta4.
+
+### Added
+- [ColinFinck](https://github.com/ColinFinck) added as maintainer for `mio-serial`
+- [estokes](https://github.com/estokes) added as maintainer for `mio-serial`
+
+## [4.0.0] SKIPPED
+
+A final release of version 4.0 is skipped due to version scheme (see [this comment](https://github.com/berkowski/tokio-serial/pull/42#issuecomment-881898536)).  This entry is just here for some clarifcation.
+
 ## [4.0.0-beta4] 2021-07-23
 
 ### Added
