@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [5.0.1] 2021-08-08
+Minor update to README.md
+
+### Changed
+- Updated README.md example to use current release version of mio-serial
+
 ## [5.0.0] 2021-08-08
 
 Final release of version 5.0.  No code changes since the previous 4.0.0-beta4.

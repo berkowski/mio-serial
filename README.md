@@ -23,7 +23,7 @@ Add `mio-serial` to you `Cargo.toml`:
 
 ```toml
 [dependencies]
-mio-serial = "4.0.0-beta4"
+mio-serial = "5.0.1"
 ```
 
 Then add this to your crate root:
