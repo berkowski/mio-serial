@@ -26,7 +26,9 @@ pub use serialport::{
     SerialPort,
     SerialPortBuilder,
     SerialPortInfo,
+    SerialPortType,
     StopBits,
+    UsbPortInfo,
 };
 
 // Re-export port-enumerating utility function.
