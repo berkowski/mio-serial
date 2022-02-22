@@ -98,12 +98,12 @@ impl SerialStream {
     ///
     /// ## Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use mio_serial::{SerialPortBuilder, SerialStream};
     /// use std::path::Path;
     ///
-    /// let path = "/dev/ttyUSB0";
-    ///
-    /// let serial = SerialStream::open(path, 9600).unwrap();
+    /// let args = mio_serial::new("/dev/ttyUSB0", 9600);
+    /// let serial = SerialStream::open(&args).unwrap();
     /// ```
     pub fn open(builder: &crate::SerialPortBuilder) -> crate::Result<Self> {
         log::debug!("opening serial port in synchronous blocking mode");
