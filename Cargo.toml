@@ -1,6 +1,6 @@
 [package]
 name = "mio-serial"
-version = "5.0.1"
+version = "5.0.2"
 authors = ["Zac Berkowitz <zac.berkowitz@gmail.com>"]
 description = "A serial port implementation for mio"
 license = "MIT"
@@ -20,7 +20,7 @@ default = []
 libudev = ["serialport/libudev"]
 
 [dependencies.mio]
-version = "0.7"
+version = "0.8"
 features = ["os-poll", "os-ext"]
 
 [dependencies.serialport]
@@ -31,7 +31,7 @@ default-features = false
 version = "0.4"
 
 [target.'cfg(unix)'.dependencies]
-nix = "0.22"
+nix = "0.23"
 
 [target.'cfg(windows)'.dependencies]
 winapi = { version = "0.3", features = ["commapi", "handleapi", "winbase"] }
