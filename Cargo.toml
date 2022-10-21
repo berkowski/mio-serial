@@ -31,7 +31,7 @@ default-features = false
 version = "0.4"
 
 [target.'cfg(unix)'.dependencies]
-nix = "0.24"
+nix = "0.25"
 
 [target.'cfg(windows)'.dependencies]
 winapi = { version = "0.3", features = ["commapi", "handleapi", "winbase"] }
