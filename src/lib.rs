@@ -149,7 +149,7 @@ impl SerialStream {
     /// * `Io` for any error while setting exclusivity for the port.
     #[cfg(unix)]
     pub fn set_exclusive(&mut self, exclusive: bool) -> crate::Result<()> {
-        self.inner.set_exclusive(exclusive).map_err(|e| e)
+        self.inner.set_exclusive(exclusive)
     }
 
     /// Returns the exclusivity of the port
