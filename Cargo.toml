@@ -13,7 +13,7 @@ categories = ["asynchronous", "hardware-support"]
 edition = "2018"
 
 [package.metadata]
-msrv = "1.46.0"    # Used by cargo-msrv
+msrv = "1.46.0" # Used by cargo-msrv
 
 [features]
 default = []
@@ -34,7 +34,12 @@ version = "0.4"
 nix = "0.25"
 
 [target.'cfg(windows)'.dependencies]
-winapi = { version = "0.3", features = ["commapi", "handleapi", "winbase"] }
+winapi = { version = "0.3", features = [
+    "commapi",
+    "handleapi",
+    "winbase",
+    "std",
+] }
 
 [dev-dependencies.env_logger]
 version = "0.9"
