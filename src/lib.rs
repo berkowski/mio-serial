@@ -602,7 +602,6 @@ impl TryFrom<NativeBlockingSerialPort> for SerialStream {
             log::error!("unable to open new async file handle");
             return Err(crate::Error::from(StdIoError::last_os_error()));
         }
-        let handle = unsafe { mem::transmute(handle) };
 
         // Construct NamedPipe and COMPort from Handle
         //
