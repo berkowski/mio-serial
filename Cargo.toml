@@ -18,6 +18,7 @@ msrv = "1.60.0" # Used by cargo-msrv
 [features]
 default = []
 libudev = ["serialport/libudev"]
+serde = ["serialport/serde"]
 
 [dependencies.mio]
 version = "0.8"
