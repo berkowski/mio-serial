@@ -16,7 +16,7 @@ fn test_builder_open_async() {
         .open_native_async()
         .expect("unable to open serial port");
 
-    common::assert_baud_rate(&stream, baud_rate)
+    common::assert_baud_rate(&stream, baud_rate);
 }
 
 #[test]
@@ -33,7 +33,7 @@ fn test_native_from_blocking() {
     let stream = mio_serial::SerialStream::try_from(native_blocking)
         .expect("unable to convert from blocking serial port object");
 
-    common::assert_baud_rate(&stream, baud_rate)
+    common::assert_baud_rate(&stream, baud_rate);
 }
 
 #[test]
@@ -44,7 +44,7 @@ fn test_stream_open() {
     let builder = mio_serial::new(port, baud_rate);
     let stream = mio_serial::SerialStream::open(&builder).expect("unable to open serial port");
 
-    common::assert_baud_rate(&stream, baud_rate)
+    common::assert_baud_rate(&stream, baud_rate);
 }
 
 /// Port enumeration doesn't seem to work on virtual serial ports created by com0com during
@@ -66,11 +66,11 @@ fn test_port_enumeration() {
 
 #[test]
 fn test_read_write_pair() {
-    let baud_rate = 38400;
-
     const DATA1: &[u8] = b"Here is an example string";
     const DATA2: &[u8] = b"And here is a reply to the example string";
     const DEFAULT_BUF_SIZE: usize = 64;
+
+    let baud_rate = 38400;
 
     let fixture = common::setup_virtual_serial_ports();
     let (port_a, port_b) = (fixture.port_a, fixture.port_b);

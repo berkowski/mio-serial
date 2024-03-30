@@ -31,7 +31,7 @@ const READABLE: usize = 0b0000_0001;
 const WRITABLE: usize = 0b0000_0010;
 const AIO: usize = 0b0000_0100;
 const LIO: usize = 0b0000_1000;
-const ERROR: usize = 0b00010000;
+const ERROR: usize = 0b0001_0000;
 const READ_CLOSED: usize = 0b0010_0000;
 const WRITE_CLOSED: usize = 0b0100_0000;
 const PRIORITY: usize = 0b1000_0000;
@@ -149,8 +149,7 @@ pub fn expect_events(poll: &mut Poll, events: &mut Events, mut expected: Vec<Exp
 
     assert!(
         expected.is_empty(),
-        "the following expected events were not found: {:?}",
-        expected
+        "the following expected events were not found: {expected:?}",
     );
 }
 
@@ -158,7 +157,7 @@ pub fn assert_would_block(result: std::io::Result<usize>) {
     match result {
         Ok(_) => panic!("unexpected OK result, expected a `WouldBlock` error"),
         Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => {}
-        Err(e) => panic!("unexpected error result: {}", e),
+        Err(e) => panic!("unexpected error result: {e}"),
     }
 }
 

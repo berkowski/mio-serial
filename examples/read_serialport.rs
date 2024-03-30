@@ -33,7 +33,7 @@ pub fn main() -> io::Result<()> {
     let mut events = Events::with_capacity(1);
 
     // Create the serial port
-    println!("Opening {} at 9600,8N1", path);
+    println!("Opening {path} at 9600,8N1");
     let mut rx = mio_serial::new(path, DEFAULT_BAUD).open_native_async()?;
 
     // #[cfg(unix)]
