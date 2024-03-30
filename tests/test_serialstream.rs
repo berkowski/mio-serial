@@ -28,7 +28,7 @@ fn test_native_from_blocking() {
     let port = fixture.port_a;
     let native_blocking = mio_serial::new(port, baud_rate)
         .open_native()
-        .expect(format!("unable to open serial port {}", port).as_str());
+        .unwrap_or_else(|e| panic!("unable to open serial port {port}: {e}"));
 
     let stream = mio_serial::SerialStream::try_from(native_blocking)
         .expect("unable to convert from blocking serial port object");
@@ -54,14 +54,13 @@ fn test_stream_open() {
 fn test_port_enumeration() {
     let fixture = common::setup_virtual_serial_ports();
     let ports = mio_serial::available_ports().expect("unable to enumerate serial ports");
-    for name in [fixture.port_a, fixture.port_b].iter() {
-        ports.iter().find(|&info| info.port_name == *name).expect(
-            format!(
-                "unable to find serial port named {} in enumerated ports",
-                name
-            )
-            .as_str(),
-        );
+    for name in [fixture.port_a, fixture.port_b] {
+        ports
+            .iter()
+            .find(|&info| info.port_name == *name)
+            .unwrap_or_else(|| {
+                panic!("unable to find serial port named {name} in enumerated ports")
+            });
     }
 }
 
@@ -79,30 +78,22 @@ fn test_read_write_pair() {
 
     let mut port_1 = mio_serial::new(port_a, baud_rate)
         .open_native_async()
-        .expect(format!("unable to open serial port {}", port_a).as_str());
+        .unwrap_or_else(|e| panic!("unable to open serial port {port_a}: {e}"));
     let mut port_2 = mio_serial::new(port_b, baud_rate)
         .open_native_async()
-        .expect(format!("unable to open serial port {}", port_b).as_str());
+        .unwrap_or_else(|e| panic!("unable to open serial port {port_b}: {e}"));
 
     // register both serial ports for read and write events
     poll.registry()
         .register(&mut port_1, TOKEN1, Interest::WRITABLE | Interest::READABLE)
-        .expect(
-            format!(
-                "unable to register port {} as readable and writable",
-                port_a
-            )
-            .as_str(),
-        );
+        .unwrap_or_else(|e| {
+            panic!("unable to register port {port_a} as readable and writable: {e}")
+        });
     poll.registry()
         .register(&mut port_2, TOKEN2, Interest::READABLE | Interest::WRITABLE)
-        .expect(
-            format!(
-                "unable to register port {} as readable and writable",
-                port_b
-            )
-            .as_str(),
-        );
+        .unwrap_or_else(|e| {
+            panic!("unable to register port {port_b} as readable and writable: {e}")
+        });
 
     let mut buf = [0u8; DEFAULT_BUF_SIZE];
 
@@ -114,13 +105,13 @@ fn test_read_write_pair() {
     );
 
     // port2 should be blocking
-    common::assert_would_block(port_2.read(&mut buf).into());
+    common::assert_would_block(port_2.read(&mut buf));
 
     // write data on port 1
     common::checked_write(&mut port_1, DATA1);
     port_1
         .flush()
-        .expect(format!("unable to flush serial port {}", port_a).as_str());
+        .unwrap_or_else(|e| panic!("unable to flush serial port {port_a}: {e}"));
 
     // port 2 should now be readable
     common::expect_events(
@@ -142,7 +133,7 @@ fn test_read_write_pair() {
     common::checked_write(&mut port_2, DATA2);
     port_2
         .flush()
-        .expect(format!("unable to flush serial port {}", port_b).as_str());
+        .unwrap_or_else(|e| panic!("unable to flush serial port {port_b}: {e}"));
 
     // port 1 should now be readable
     common::expect_events(

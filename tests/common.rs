@@ -18,11 +18,11 @@ static LOGGING_INIT: Once = Once::new();
 
 /// Default serial port names used for testing
 #[cfg(unix)]
-const DEFAULT_TEST_PORT_NAMES: &'static str = "/tty/USB0;/tty/USB1";
+const DEFAULT_TEST_PORT_NAMES: &str = "/tty/USB0;/tty/USB1";
 
 /// Default serial port names used for testing
 #[cfg(windows)]
-const DEFAULT_TEST_PORT_NAMES: &'static str = "COM1;COM2";
+const DEFAULT_TEST_PORT_NAMES: &str = "COM1;COM2";
 
 #[derive(Debug)]
 pub struct Readiness(usize);
@@ -92,6 +92,7 @@ impl From<Interest> for Readiness {
     }
 }
 
+#[must_use]
 pub fn init_with_poll() -> (Poll, Events) {
     let poll = Poll::new().expect("unable to create poll object");
     let events = Events::with_capacity(16);
@@ -198,11 +199,8 @@ impl Drop for Fixture {
 impl Fixture {
     #[cfg(unix)]
     pub fn new(port_a: &'static str, port_b: &'static str) -> Self {
-        LOGGING_INIT.call_once(|| env_logger::init());
-        let args = [
-            format!("PTY,link={}", port_a),
-            format!("PTY,link={}", port_b),
-        ];
+        LOGGING_INIT.call_once(env_logger::init);
+        let args = [format!("PTY,link={port_a}"), format!("PTY,link={port_b}")];
         log::trace!("starting process: socat {} {}", args[0], args[1]);
 
         let process = process::Command::new("socat")

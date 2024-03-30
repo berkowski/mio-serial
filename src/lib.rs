@@ -671,7 +671,7 @@ mod io {
             uninterruptibly!(match unsafe {
                 libc::write(
                     self.as_raw_fd(),
-                    bytes.as_ptr() as *const libc::c_void,
+                    bytes.as_ptr().cast::<libc::c_void>(),
                     bytes.len() as libc::size_t,
                 )
             } {
