@@ -21,7 +21,7 @@ libudev = ["serialport/libudev"]
 serde = ["serialport/serde"]
 
 [dependencies.mio]
-version = "0.8"
+version = "0.8.11"
 features = ["os-poll", "os-ext"]
 
 [dependencies.serialport]
