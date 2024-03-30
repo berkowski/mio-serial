@@ -10,7 +10,7 @@ documentation = "http://docs.rs/mio-serial"
 readme = "README.md"
 keywords = ["rs232", "serial", "mio"]
 categories = ["asynchronous", "hardware-support"]
-edition = "2018"
+edition = "2021"
 
 [package.metadata]
 msrv = "1.60.0" # Used by cargo-msrv

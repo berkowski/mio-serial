@@ -38,7 +38,6 @@ pub use serialport::available_ports;
 pub use serialport::new;
 
 use mio::{event::Source, Interest, Registry, Token};
-use std::convert::TryFrom;
 use std::io::{Error as StdIoError, ErrorKind as StdIoErrorKind, Result as StdIoResult};
 use std::time::Duration;
 
