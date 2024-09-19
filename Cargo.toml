@@ -20,7 +20,7 @@ default = []
 libudev = ["serialport/libudev"]
 
 [dependencies.mio]
-version = "0.8"
+version = "1"
 features = ["os-poll", "os-ext"]
 
 [dependencies.serialport]
