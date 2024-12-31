@@ -1,6 +1,6 @@
 [package]
 name = "mio-serial"
-version = "5.0.5"
+version = "5.0.6"
 authors = ["Zac Berkowitz <zac.berkowitz@gmail.com>"]
 description = "A serial port implementation for mio"
 license = "MIT"
@@ -31,7 +31,7 @@ default-features = false
 version = "0.4"
 
 [target.'cfg(unix)'.dependencies]
-nix = "0.26"
+nix = { version = "0.29", features = ["term"] }
 
 [target.'cfg(windows)'.dependencies]
 winapi = { version = "0.3", features = [
@@ -42,7 +42,7 @@ winapi = { version = "0.3", features = [
 ] }
 
 [dev-dependencies.env_logger]
-version = "0.10"
+version = "0.11"
 
 [[example]]
 name = "read_serialport"
