@@ -13,7 +13,7 @@ categories = ["asynchronous", "hardware-support"]
 edition = "2021"
 
 [package.metadata]
-msrv = "1.70.0" # Used by cargo-msrv
+msrv = "1.78.0" # Used by cargo-msrv
 
 [features]
 default = []

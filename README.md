@@ -38,7 +38,7 @@ cargo build --no-default-features
 ```
 
 ### MSRV
-The Minimum Supported Rust Version is **1.70.0** as found using [cargo-msrv](https://crates.io/crates/cargo-msrv)
+The Minimum Supported Rust Version is **1.78.0** as found using [cargo-msrv](https://crates.io/crates/cargo-msrv)
 
 ## Examples
 A few examples can be found [here](https://github.com/berkowski/mio-serial/tree/master/examples).
