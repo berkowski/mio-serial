@@ -186,7 +186,7 @@ impl SerialStream {
     /// https://github.com/tokio-rs/tokio/pull/3760#issuecomment-839854617) I would rather not
     /// have any enabled code over a kind-of-works-maybe impl.  So I'll leave this code here
     /// for now but hard-code it disabled.
-    #[cfg(never)]
+    #[cfg(any())]
     pub fn try_clone_native(&self) -> Result<SerialStream> {
         // This works so long as the underlying serialport-rs method doesn't do anything but
         // duplicate the low-level file descriptor.  This is the case as of serialport-rs:4.0.1
@@ -494,7 +494,7 @@ impl crate::SerialPort for SerialStream {
     ///
     /// This function returns an error if the serial port couldn't be cloned.
     #[inline(always)]
-    #[cfg(never)]
+    #[cfg(any())]
     fn try_clone(&self) -> crate::Result<Box<dyn crate::SerialPort>> {
         Ok(Box::new(self.try_clone_native()?))
     }
@@ -541,12 +541,14 @@ impl TryFrom<NativeBlockingSerialPort> for SerialStream {
             port.name().unwrap_or_else(|| String::from("<UNKNOWN>"))
         );
         log::debug!("setting VMIN = 1");
+
         use nix::sys::termios::{self, SetArg, SpecialCharacterIndices};
-        let mut t = termios::tcgetattr(port.as_raw_fd()).map_err(map_nix_error)?;
+        let fd = unsafe { BorrowedFd::borrow_raw(port.as_raw_fd()) };
+        let mut t = termios::tcgetattr(fd).map_err(map_nix_error)?;
 
         // Set VMIN = 1 to block until at least one character is received.
         t.control_chars[SpecialCharacterIndices::VMIN as usize] = 1;
-        termios::tcsetattr(port.as_raw_fd(), SetArg::TCSANOW, &t).map_err(map_nix_error)?;
+        termios::tcsetattr(fd, SetArg::TCSANOW, &t).map_err(map_nix_error)?;
 
         // Set the O_NONBLOCK flag.
         log::debug!("setting O_NONBLOCK flag");
@@ -681,7 +683,10 @@ mod io {
         }
 
         fn flush(&mut self) -> StdIoResult<()> {
-            uninterruptibly!(termios::tcdrain(self.inner.as_raw_fd()).map_err(StdIoError::from))
+            uninterruptibly!(termios::tcdrain(unsafe {
+                BorrowedFd::borrow_raw(self.inner.as_raw_fd())
+            })
+            .map_err(StdIoError::from))
         }
     }
 
@@ -715,7 +720,10 @@ mod io {
         }
 
         fn flush(&mut self) -> StdIoResult<()> {
-            uninterruptibly!(termios::tcdrain(self.inner.as_raw_fd()).map_err(StdIoError::from))
+            uninterruptibly!(termios::tcdrain(unsafe {
+                BorrowedFd::borrow_raw(self.inner.as_raw_fd())
+            })
+            .map_err(StdIoError::from))
         }
     }
 }

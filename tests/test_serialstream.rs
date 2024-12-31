@@ -148,7 +148,7 @@ fn test_read_write_pair() {
 }
 
 // Same as test_send_recv but use a cloned receiver
-#[cfg(never)]
+#[cfg(any())]
 #[test]
 fn test_try_clone_native() {
     const DATA1: &[u8] = b"Here is an example string";
