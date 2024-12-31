@@ -54,21 +54,18 @@ mod os_prelude {
     pub use mio::windows::NamedPipe;
     pub use serialport::COMPort as NativeBlockingSerialPort;
     pub use std::ffi::OsStr;
-    pub use std::io::{self, Read, Write};
+    pub use std::io;
     pub use std::mem;
     pub use std::os::windows::ffi::OsStrExt;
-    pub use std::os::windows::io::{AsRawHandle, FromRawHandle, RawHandle};
+    pub use std::os::windows::io::{FromRawHandle, RawHandle};
     pub use std::path::Path;
     pub use std::ptr;
-    pub use std::time::Duration;
-    pub use winapi::shared::minwindef::TRUE;
     pub use winapi::um::commapi::SetCommTimeouts;
     pub use winapi::um::fileapi::*;
-    pub use winapi::um::handleapi::{DuplicateHandle, INVALID_HANDLE_VALUE};
-    pub use winapi::um::processthreadsapi::GetCurrentProcess;
+    pub use winapi::um::handleapi::INVALID_HANDLE_VALUE;
     pub use winapi::um::winbase::{COMMTIMEOUTS, FILE_FLAG_OVERLAPPED};
     pub use winapi::um::winnt::{
-        DUPLICATE_SAME_ACCESS, FILE_ATTRIBUTE_NORMAL, GENERIC_READ, GENERIC_WRITE, HANDLE,
+        FILE_ATTRIBUTE_NORMAL, GENERIC_READ, GENERIC_WRITE, HANDLE,
     };
 }
 use os_prelude::*;
