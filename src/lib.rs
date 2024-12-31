@@ -38,7 +38,6 @@ pub use serialport::available_ports;
 pub use serialport::new;
 
 use mio::{event::Source, Interest, Registry, Token};
-use std::convert::TryFrom;
 use std::io::{Error as StdIoError, ErrorKind as StdIoErrorKind, Result as StdIoResult};
 use std::time::Duration;
 
@@ -74,7 +73,7 @@ mod os_prelude {
 }
 use os_prelude::*;
 
-/// SerialStream
+/// A [`SerialStream`].
 #[derive(Debug)]
 pub struct SerialStream {
     #[cfg(unix)]
@@ -500,7 +499,7 @@ impl crate::SerialPort for SerialStream {
         Ok(Box::new(self.try_clone_native()?))
     }
 
-    /// Cloning is not supported for SerialStream objects
+    /// Cloning is not supported for [`SerialStream`] objects
     ///
     /// This logic has never really completely worked.  Cloned file descriptors in asynchronous
     /// code is a semantic minefield.  Are you cloning the file descriptor?  Are you cloning the
@@ -509,8 +508,8 @@ impl crate::SerialPort for SerialStream {
     ///
     /// Maybe it can be done with more work, but until a clear use-case is required (or mio/tokio
     /// gets an equivalent of the unix `AsyncFd` for async file handles, see
-    /// https://github.com/tokio-rs/tokio/issues/3781 and
-    /// https://github.com/tokio-rs/tokio/pull/3760#issuecomment-839854617) I would rather not
+    /// <https://github.com/tokio-rs/tokio/issues/3781> and
+    /// <https://github.com/tokio-rs/tokio/pull/3760#issuecomment-839854617>) I would rather not
     /// have any code available over a kind-of-works-maybe impl.  So I'll leave this code here
     /// for now but hard-code it disabled.
     fn try_clone(&self) -> crate::Result<Box<dyn crate::SerialPort>> {
@@ -674,7 +673,7 @@ mod io {
             uninterruptibly!(match unsafe {
                 libc::write(
                     self.as_raw_fd(),
-                    bytes.as_ptr() as *const libc::c_void,
+                    bytes.as_ptr().cast::<libc::c_void>(),
                     bytes.len() as libc::size_t,
                 )
             } {
@@ -887,13 +886,13 @@ impl Source for SerialStream {
     }
 }
 
-/// An extension trait for SerialPortBuilder
+/// An extension trait for [`SerialPortBuilder`]
 ///
-/// This trait adds an additional method to SerialPortBuilder:
+/// This trait adds an additional method to [`SerialPortBuilder`]:
 ///
 /// - open_native_async
 ///
-/// These methods mirror the `open_native` methods of SerialPortBuilder
+/// These methods mirror the [`SerialPortBuilder::open_native`] methods
 pub trait SerialPortBuilderExt {
     /// Open a platform-specific interface to the port with the specified settings
     fn open_native_async(self) -> Result<SerialStream>;
