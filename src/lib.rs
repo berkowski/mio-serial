@@ -84,14 +84,6 @@ pub struct SerialStream {
     pipe: NamedPipe,
 }
 
-#[cfg(unix)]
-fn map_nix_error(e: nix::Error) -> crate::Error {
-    crate::Error {
-        kind: crate::ErrorKind::Io(StdIoErrorKind::Other),
-        description: e.to_string(),
-    }
-}
-
 impl SerialStream {
     /// Open a nonblocking serial port from the provided builder
     ///
@@ -536,22 +528,11 @@ impl TryFrom<NativeBlockingSerialPort> for SerialStream {
     type Error = crate::Error;
     #[cfg(unix)]
     fn try_from(port: NativeBlockingSerialPort) -> std::result::Result<Self, Self::Error> {
+        // Set the O_NONBLOCK flag.
         log::debug!(
-            "switching {} to asynchronous mode",
+            "setting O_NONBLOCK for {}",
             port.name().unwrap_or_else(|| String::from("<UNKNOWN>"))
         );
-        log::debug!("setting VMIN = 1");
-
-        use nix::sys::termios::{self, SetArg, SpecialCharacterIndices};
-        let fd = unsafe { BorrowedFd::borrow_raw(port.as_raw_fd()) };
-        let mut t = termios::tcgetattr(fd).map_err(map_nix_error)?;
-
-        // Set VMIN = 1 to block until at least one character is received.
-        t.control_chars[SpecialCharacterIndices::VMIN as usize] = 1;
-        termios::tcsetattr(fd, SetArg::TCSANOW, &t).map_err(map_nix_error)?;
-
-        // Set the O_NONBLOCK flag.
-        log::debug!("setting O_NONBLOCK flag");
         let flags = unsafe { libc::fcntl(port.as_raw_fd(), libc::F_GETFL) };
         if flags < 0 {
             return Err(StdIoError::last_os_error().into());
