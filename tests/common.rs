@@ -18,7 +18,7 @@ static LOGGING_INIT: Once = Once::new();
 
 /// Default serial port names used for testing
 #[cfg(unix)]
-const DEFAULT_TEST_PORT_NAMES: &'static str = "/tty/USB0;/tty/USB1";
+const DEFAULT_TEST_PORT_NAMES: &'static str = "USB0;USB1";
 
 /// Default serial port names used for testing
 #[cfg(windows)]
@@ -185,20 +185,25 @@ pub struct Fixture {
 impl Drop for Fixture {
     fn drop(&mut self) {
         log::trace!("stopping socat process (id: {})...", self.process.id());
-
         self.process.kill().ok();
-        thread::sleep(Duration::from_millis(250));
-        log::trace!("removing link: {}", self.port_a);
-        std::fs::remove_file(self.port_a).ok();
-        log::trace!("removing link: {}", self.port_b);
-        std::fs::remove_file(self.port_b).ok();
+        thread::sleep(Duration::from_millis(1000));
+        log::trace!("removing link: {:?}", self.port_a);
+        std::fs::remove_file(&self.port_a).ok();
+        log::trace!("removing link: {:?}", self.port_b);
+        std::fs::remove_file(&self.port_b).ok();
+        thread::sleep(Duration::from_millis(1000));
     }
 }
 
 impl Fixture {
     #[cfg(unix)]
     pub fn new(port_a: &'static str, port_b: &'static str) -> Self {
+        use std::sync::atomic::{AtomicUsize, Ordering};
+        static N: AtomicUsize = AtomicUsize::new(0);
         LOGGING_INIT.call_once(|| env_logger::init());
+        let n = N.fetch_add(1, Ordering::Relaxed);
+        let port_a = format!("{}{}", port_a, n).leak();
+        let port_b = format!("{}{}", port_b, n).leak();
         let args = [
             format!("PTY,link={}", port_a),
             format!("PTY,link={}", port_b),
@@ -210,9 +215,7 @@ impl Fixture {
             .spawn()
             .expect("unable to spawn socat process");
         log::trace!(".... done! (pid: {:?})", process.id());
-
-        thread::sleep(Duration::from_millis(500));
-
+        thread::sleep(Duration::from_millis(1000));
         Self {
             process,
             port_a,
