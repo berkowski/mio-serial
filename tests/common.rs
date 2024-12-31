@@ -18,11 +18,11 @@ static LOGGING_INIT: Once = Once::new();
 
 /// Default serial port names used for testing
 #[cfg(unix)]
-const DEFAULT_TEST_PORT_NAMES: &'static str = "/tty/USB0;/tty/USB1";
+const DEFAULT_TEST_PORT_NAMES: &str = "USB0;USB1";
 
 /// Default serial port names used for testing
 #[cfg(windows)]
-const DEFAULT_TEST_PORT_NAMES: &'static str = "COM1;COM2";
+const DEFAULT_TEST_PORT_NAMES: &str = "COM1;COM2";
 
 #[derive(Debug)]
 pub struct Readiness(usize);
@@ -31,7 +31,7 @@ const READABLE: usize = 0b0000_0001;
 const WRITABLE: usize = 0b0000_0010;
 const AIO: usize = 0b0000_0100;
 const LIO: usize = 0b0000_1000;
-const ERROR: usize = 0b00010000;
+const ERROR: usize = 0b0001_0000;
 const READ_CLOSED: usize = 0b0010_0000;
 const WRITE_CLOSED: usize = 0b0100_0000;
 const PRIORITY: usize = 0b1000_0000;
@@ -92,6 +92,7 @@ impl From<Interest> for Readiness {
     }
 }
 
+#[must_use]
 pub fn init_with_poll() -> (Poll, Events) {
     let poll = Poll::new().expect("unable to create poll object");
     let events = Events::with_capacity(16);
@@ -148,8 +149,7 @@ pub fn expect_events(poll: &mut Poll, events: &mut Events, mut expected: Vec<Exp
 
     assert!(
         expected.is_empty(),
-        "the following expected events were not found: {:?}",
-        expected
+        "the following expected events were not found: {expected:?}",
     );
 }
 
@@ -157,7 +157,7 @@ pub fn assert_would_block(result: std::io::Result<usize>) {
     match result {
         Ok(_) => panic!("unexpected OK result, expected a `WouldBlock` error"),
         Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => {}
-        Err(e) => panic!("unexpected error result: {}", e),
+        Err(e) => panic!("unexpected error result: {e}"),
     }
 }
 
@@ -185,20 +185,25 @@ pub struct Fixture {
 impl Drop for Fixture {
     fn drop(&mut self) {
         log::trace!("stopping socat process (id: {})...", self.process.id());
-
         self.process.kill().ok();
-        thread::sleep(Duration::from_millis(250));
-        log::trace!("removing link: {}", self.port_a);
-        std::fs::remove_file(self.port_a).ok();
-        log::trace!("removing link: {}", self.port_b);
-        std::fs::remove_file(self.port_b).ok();
+        thread::sleep(Duration::from_millis(1000));
+        log::trace!("removing link: {:?}", self.port_a);
+        std::fs::remove_file(&self.port_a).ok();
+        log::trace!("removing link: {:?}", self.port_b);
+        std::fs::remove_file(&self.port_b).ok();
+        thread::sleep(Duration::from_millis(1000));
     }
 }
 
 impl Fixture {
     #[cfg(unix)]
     pub fn new(port_a: &'static str, port_b: &'static str) -> Self {
+        use std::sync::atomic::{AtomicUsize, Ordering};
+        static N: AtomicUsize = AtomicUsize::new(0);
         LOGGING_INIT.call_once(|| env_logger::init());
+        let n = N.fetch_add(1, Ordering::Relaxed);
+        let port_a = format!("{}{}", port_a, n).leak();
+        let port_b = format!("{}{}", port_b, n).leak();
         let args = [
             format!("PTY,link={}", port_a),
             format!("PTY,link={}", port_b),
@@ -210,9 +215,7 @@ impl Fixture {
             .spawn()
             .expect("unable to spawn socat process");
         log::trace!(".... done! (pid: {:?})", process.id());
-
-        thread::sleep(Duration::from_millis(500));
-
+        thread::sleep(Duration::from_millis(1000));
         Self {
             process,
             port_a,

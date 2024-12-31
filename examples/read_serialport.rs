@@ -2,6 +2,7 @@
 extern crate mio;
 extern crate mio_serial;
 
+use log::error;
 use mio::{Events, Interest, Poll, Token};
 
 use std::env;
@@ -32,7 +33,7 @@ pub fn main() -> io::Result<()> {
     let mut events = Events::with_capacity(1);
 
     // Create the serial port
-    println!("Opening {} at 9600,8N1", path);
+    println!("Opening {path} at 9600,8N1");
     let mut rx = mio_serial::new(path, DEFAULT_BAUD).open_native_async()?;
 
     // #[cfg(unix)]
@@ -55,28 +56,27 @@ pub fn main() -> io::Result<()> {
             // Validate the token we registered our socket with,
             // in this example it will only ever be one but we
             // make sure it's valid none the less.
-            match event.token() {
-                SERIAL_TOKEN => loop {
+            if event.token() == SERIAL_TOKEN {
+                loop {
                     // In this loop we receive all packets queued for the socket.
                     match rx.read(&mut buf) {
                         Ok(count) => {
-                            println!("{:?}", String::from_utf8_lossy(&buf[..count]))
+                            println!("{:?}", String::from_utf8_lossy(&buf[..count]));
                         }
                         Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => {
                             break;
                         }
                         Err(e) => {
-                            println!("Quitting due to read error: {}", e);
+                            println!("Quitting due to read error: {e}");
                             return Err(e);
                         }
                     }
-                },
-                _ => {
-                    // This should never happen as we only registered our
-                    // `UdpSocket` using the `UDP_SOCKET` token, but if it ever
-                    // does we'll log it.
-                    // warn!("Got event for unexpected token: {:?}", event);
                 }
+            } else {
+                // This should never happen as we only registered our
+                // `UdpSocket` using the `UDP_SOCKET` token, but if it ever
+                // does we'll log it.
+                error!("Got event for unexpected token: {:?}", event);
             }
         }
     }

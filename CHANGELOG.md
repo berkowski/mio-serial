@@ -5,6 +5,9 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [5.0.3 and 5.0.4] 2023-01-12
+- update dependencies
+
 ## [5.0.2] 2022-03-04
 - merged [#28](https://github.com/berkowski/mio-serial/pull/28)
 - update dependencies
