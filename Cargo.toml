@@ -13,14 +13,14 @@ categories = ["asynchronous", "hardware-support"]
 edition = "2018"
 
 [package.metadata]
-msrv = "1.60.0" # Used by cargo-msrv
+msrv = "1.70.0" # Used by cargo-msrv
 
 [features]
 default = []
 libudev = ["serialport/libudev"]
 
 [dependencies.mio]
-version = "0.8"
+version = "1"
 features = ["os-poll", "os-ext"]
 
 [dependencies.serialport]
