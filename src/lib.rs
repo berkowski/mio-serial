@@ -64,9 +64,7 @@ mod os_prelude {
     pub use winapi::um::fileapi::*;
     pub use winapi::um::handleapi::INVALID_HANDLE_VALUE;
     pub use winapi::um::winbase::{COMMTIMEOUTS, FILE_FLAG_OVERLAPPED};
-    pub use winapi::um::winnt::{
-        FILE_ATTRIBUTE_NORMAL, GENERIC_READ, GENERIC_WRITE, HANDLE,
-    };
+    pub use winapi::um::winnt::{FILE_ATTRIBUTE_NORMAL, GENERIC_READ, GENERIC_WRITE, HANDLE};
 }
 use os_prelude::*;
 
@@ -550,11 +548,11 @@ impl TryFrom<NativeBlockingSerialPort> for SerialStream {
         let name = port
             .name()
             .ok_or_else(|| crate::Error::new(crate::ErrorKind::NoDevice, "Empty device name"))?;
-        let baud = port.baud_rate()?;
-        let parity = port.parity()?;
-        let data_bits = port.data_bits()?;
-        let stop_bits = port.stop_bits()?;
-        let flow_control = port.flow_control()?;
+        let baud = port.baud_rate().ok();
+        let parity = port.parity().ok();
+        let data_bits = port.data_bits().ok();
+        let stop_bits = port.stop_bits().ok();
+        let flow_control = port.flow_control().ok();
 
         let mut path = Vec::<u16>::new();
         path.extend(OsStr::new("\\\\.\\").encode_wide());
@@ -597,11 +595,21 @@ impl TryFrom<NativeBlockingSerialPort> for SerialStream {
             mem::ManuallyDrop::new(unsafe { serialport::COMPort::from_raw_handle(handle) });
 
         log::debug!("re-setting serial port parameters to original values from synchronous port");
-        com_port.set_baud_rate(baud)?;
-        com_port.set_parity(parity)?;
-        com_port.set_data_bits(data_bits)?;
-        com_port.set_stop_bits(stop_bits)?;
-        com_port.set_flow_control(flow_control)?;
+        if let Some(baud) = baud {
+            com_port.set_baud_rate(baud)?;
+        }
+        if let Some(parity) = parity {
+            com_port.set_parity(parity)?;
+        }
+        if let Some(data_bits) = data_bits {
+            com_port.set_data_bits(data_bits)?;
+        }
+        if let Some(stop_bits) = stop_bits {
+            com_port.set_stop_bits(stop_bits)?;
+        }
+        if let Some(flow_control) = flow_control {
+            com_port.set_flow_control(flow_control)?;
+        }
         sys::override_comm_timeouts(handle)?;
 
         Ok(Self {
