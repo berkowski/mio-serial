@@ -188,9 +188,9 @@ impl Drop for Fixture {
         self.process.kill().ok();
         thread::sleep(Duration::from_millis(1000));
         log::trace!("removing link: {:?}", self.port_a);
-        std::fs::remove_file(&self.port_a).ok();
+        std::fs::remove_file(self.port_a).ok();
         log::trace!("removing link: {:?}", self.port_b);
-        std::fs::remove_file(&self.port_b).ok();
+        std::fs::remove_file(self.port_b).ok();
         thread::sleep(Duration::from_millis(1000));
     }
 }
@@ -200,14 +200,11 @@ impl Fixture {
     pub fn new(port_a: &'static str, port_b: &'static str) -> Self {
         use std::sync::atomic::{AtomicUsize, Ordering};
         static N: AtomicUsize = AtomicUsize::new(0);
-        LOGGING_INIT.call_once(|| env_logger::init());
+        LOGGING_INIT.call_once(env_logger::init);
         let n = N.fetch_add(1, Ordering::Relaxed);
-        let port_a = format!("{}{}", port_a, n).leak();
-        let port_b = format!("{}{}", port_b, n).leak();
-        let args = [
-            format!("PTY,link={}", port_a),
-            format!("PTY,link={}", port_b),
-        ];
+        let port_a = format!("{port_a}{n}").leak();
+        let port_b = format!("{port_b}{n}").leak();
+        let args = [format!("PTY,link={port_a}"), format!("PTY,link={port_b}")];
         log::trace!("starting process: socat {} {}", args[0], args[1]);
 
         let process = process::Command::new("socat")
