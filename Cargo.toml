@@ -20,7 +20,7 @@ default = []
 libudev = ["serialport/libudev"]
 serde = ["serialport/serde"]
 
-[dependencies]
+[target.'cfg(windows)'.dependencies]
 windows-sys = { version = ">=0.59.0,<0.62", features = [
     "Win32_Devices_Communication",
     "Win32_Storage_FileSystem",
@@ -41,7 +41,7 @@ default-features = false
 version = "0.4"
 
 [target.'cfg(unix)'.dependencies]
-nix = { version = "0.30", features = ["term"] }
+nix = { version = "0.31.3", features = ["term"] }
 
 
 [dev-dependencies.env_logger]
