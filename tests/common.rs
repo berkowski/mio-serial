@@ -188,9 +188,9 @@ impl Drop for Fixture {
         self.process.kill().ok();
         thread::sleep(Duration::from_millis(1000));
         log::trace!("removing link: {:?}", self.port_a);
-        std::fs::remove_file(&self.port_a).ok();
+        std::fs::remove_file(self.port_a).ok();
         log::trace!("removing link: {:?}", self.port_b);
-        std::fs::remove_file(&self.port_b).ok();
+        std::fs::remove_file(self.port_b).ok();
         thread::sleep(Duration::from_millis(1000));
     }
 }
