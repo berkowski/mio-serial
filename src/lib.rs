@@ -60,11 +60,13 @@ mod os_prelude {
     pub use std::os::windows::io::{FromRawHandle, RawHandle};
     pub use std::path::Path;
     pub use std::ptr;
-    pub use winapi::um::commapi::SetCommTimeouts;
-    pub use winapi::um::fileapi::*;
-    pub use winapi::um::handleapi::INVALID_HANDLE_VALUE;
-    pub use winapi::um::winbase::{COMMTIMEOUTS, FILE_FLAG_OVERLAPPED};
-    pub use winapi::um::winnt::{FILE_ATTRIBUTE_NORMAL, GENERIC_READ, GENERIC_WRITE, HANDLE};
+    pub use windows_sys::Win32::Devices::Communication::{SetCommTimeouts, COMMTIMEOUTS};
+    pub use windows_sys::Win32::Foundation::{
+        GENERIC_READ, GENERIC_WRITE, HANDLE, INVALID_HANDLE_VALUE,
+    };
+    pub use windows_sys::Win32::Storage::FileSystem::{
+        CreateFileW, FILE_ATTRIBUTE_NORMAL, FILE_FLAG_OVERLAPPED, OPEN_EXISTING,
+    };
 }
 use os_prelude::*;
 
@@ -790,7 +792,7 @@ mod sys {
     /// Overrides timeout value set by serialport-rs so that the read end will
     /// never wake up with 0-byte payload.
     pub(crate) fn override_comm_timeouts(handle: RawHandle) -> StdIoResult<()> {
-        let mut timeouts = COMMTIMEOUTS {
+        let timeouts = COMMTIMEOUTS {
             // wait at most 1ms between two bytes (0 means no timeout)
             ReadIntervalTimeout: 1,
             // disable "total" timeout to wait at least 1 byte forever
@@ -801,7 +803,7 @@ mod sys {
             WriteTotalTimeoutConstant: 0,
         };
 
-        let r = unsafe { SetCommTimeouts(handle, &mut timeouts) };
+        let r = unsafe { SetCommTimeouts(handle, &timeouts) };
         if r == 0 {
             return Err(io::Error::last_os_error());
         }

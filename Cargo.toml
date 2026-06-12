@@ -20,6 +20,15 @@ default = []
 libudev = ["serialport/libudev"]
 serde = ["serialport/serde"]
 
+[dependencies]
+windows-sys = { version = ">=0.59.0,<0.62", features = [
+    "Win32_Devices_Communication",
+    "Win32_Storage_FileSystem",
+    "Win32_Foundation",
+    # required for CreateFileW to be available in 0.59 & 0.60
+    "Win32_Security",
+] }
+
 [dependencies.mio]
 version = "1"
 features = ["os-poll", "os-ext"]
@@ -34,13 +43,6 @@ version = "0.4"
 [target.'cfg(unix)'.dependencies]
 nix = { version = "0.30", features = ["term"] }
 
-[target.'cfg(windows)'.dependencies]
-winapi = { version = "0.3", features = [
-    "commapi",
-    "handleapi",
-    "winbase",
-    "std",
-] }
 
 [dev-dependencies.env_logger]
 version = "0.11"
