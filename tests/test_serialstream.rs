@@ -10,7 +10,7 @@ const TOKEN2: Token = Token(1);
 fn test_builder_open_async() {
     let fixture = common::setup_virtual_serial_ports();
     let baud_rate = 9600;
-    let builder = mio_serial::new(fixture.port_a, baud_rate);
+    let builder = mio_serial::new(&*fixture.port_a, baud_rate);
 
     let stream = builder
         .open_native_async()
@@ -25,7 +25,7 @@ fn test_native_from_blocking() {
     let baud_rate = 9600;
 
     let fixture = common::setup_virtual_serial_ports();
-    let port = fixture.port_a;
+    let port = &*fixture.port_a;
     let native_blocking = mio_serial::new(port, baud_rate)
         .open_native()
         .unwrap_or_else(|e| panic!("unable to open serial port {port}: {e}"));
@@ -40,7 +40,7 @@ fn test_native_from_blocking() {
 fn test_stream_open() {
     let baud_rate = 9600;
     let fixture = common::setup_virtual_serial_ports();
-    let port = fixture.port_a;
+    let port = &*fixture.port_a;
     let builder = mio_serial::new(port, baud_rate);
     let stream = mio_serial::SerialStream::open(&builder).expect("unable to open serial port");
 
@@ -54,7 +54,7 @@ fn test_stream_open() {
 fn test_port_enumeration() {
     let fixture = common::setup_virtual_serial_ports();
     let ports = mio_serial::available_ports().expect("unable to enumerate serial ports");
-    for name in [fixture.port_a, fixture.port_b] {
+    for name in [&*fixture.port_a, &*fixture.port_b] {
         ports
             .iter()
             .find(|&info| info.port_name == *name)
@@ -73,7 +73,7 @@ fn test_read_write_pair() {
     let baud_rate = 38400;
 
     let fixture = common::setup_virtual_serial_ports();
-    let (port_a, port_b) = (fixture.port_a, fixture.port_b);
+    let (port_a, port_b) = (&*fixture.port_a, &*fixture.port_b);
     let (mut poll, mut events) = common::init_with_poll();
 
     let mut port_1 = mio_serial::new(port_a, baud_rate)

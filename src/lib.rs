@@ -60,7 +60,6 @@ mod os_prelude {
     pub use std::os::windows::io::{FromRawHandle, RawHandle};
     pub use std::path::Path;
     pub use std::ptr;
-
     pub use windows_sys::Win32::Devices::Communication::{SetCommTimeouts, COMMTIMEOUTS};
     pub use windows_sys::Win32::Foundation::{
         GENERIC_READ, GENERIC_WRITE, HANDLE, INVALID_HANDLE_VALUE,
@@ -669,7 +668,7 @@ mod io {
         }
     }
 
-    impl<'a> Read for &'a SerialStream {
+    impl Read for &SerialStream {
         fn read(&mut self, bytes: &mut [u8]) -> StdIoResult<usize> {
             uninterruptibly!(match unsafe {
                 libc::read(
@@ -684,7 +683,7 @@ mod io {
         }
     }
 
-    impl<'a> Write for &'a SerialStream {
+    impl Write for &SerialStream {
         fn write(&mut self, bytes: &[u8]) -> StdIoResult<usize> {
             uninterruptibly!(match unsafe {
                 libc::write(

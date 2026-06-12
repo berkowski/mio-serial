@@ -41,7 +41,7 @@ default-features = false
 version = "0.4"
 
 [target.'cfg(unix)'.dependencies]
-nix = { version = "0.29", features = ["term"] }
+nix = { version = "0.30", features = ["term"] }
 
 
 [dev-dependencies.env_logger]
