@@ -188,9 +188,9 @@ impl Drop for Fixture {
         self.process.kill().ok();
         thread::sleep(Duration::from_millis(1000));
         log::trace!("removing link: {:?}", self.port_a);
-        std::fs::remove_file(self.port_a).ok();
+        std::fs::remove_file(&self.port_a).ok();
         log::trace!("removing link: {:?}", self.port_b);
-        std::fs::remove_file(self.port_b).ok();
+        std::fs::remove_file(&self.port_b).ok();
         thread::sleep(Duration::from_millis(1000));
     }
 }
@@ -222,8 +222,11 @@ impl Fixture {
 
     #[cfg(not(unix))]
     pub fn new(port_a: &'static str, port_b: &'static str) -> Self {
-        LOGGING_INIT.call_once(|| env_logger::init());
-        Self { port_a, port_b }
+        LOGGING_INIT.call_once(env_logger::init);
+        Self {
+            port_a: port_a.to_string(),
+            port_b: port_b.to_string(),
+        }
     }
 }
 

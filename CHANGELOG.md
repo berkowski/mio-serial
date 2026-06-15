@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [5.0.7] 2026-06-15
+
+### Changed
+- Replaced the `winapi` dependency with `windows-sys` for Windows FFI, scoped to Windows targets only ([#59](https://github.com/berkowski/mio-serial/pull/59)).
+- Upgraded `nix` to 0.31 ([#54](https://github.com/berkowski/mio-serial/pull/54)).
+- Cleaned up `rustfmt`/`clippy` warnings and stopped using `String::leak` in the test suite ([#56](https://github.com/berkowski/mio-serial/pull/56), [#55](https://github.com/berkowski/mio-serial/pull/55)).
+
+### Fixed
+- Converting a blocking serial port to an async `SerialStream` on Windows no longer fails when one of the port's current settings cannot be read; the unreadable setting is now logged and skipped instead of aborting the conversion ([#60](https://github.com/berkowski/mio-serial/pull/60)).
+- Repaired the test suite, which no longer compiled — and had a Windows-only build break in the fixtures — after the `String::leak` removal.
+
 ## [5.0.3 and 5.0.4] 2023-01-12
 - update dependencies
 
