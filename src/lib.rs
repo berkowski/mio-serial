@@ -70,6 +70,17 @@ mod os_prelude {
 }
 use os_prelude::*;
 
+#[cfg(windows)]
+fn win32_device_path(name: &str) -> Vec<u16> {
+    let mut path = Vec::new();
+    if !name.starts_with('\\') {
+        path.extend(OsStr::new("\\\\.\\").encode_wide());
+    }
+    path.extend(Path::new(name).as_os_str().encode_wide());
+    path.push(0);
+    path
+}
+
 /// A [`SerialStream`].
 #[derive(Debug)]
 pub struct SerialStream {
@@ -571,10 +582,7 @@ impl TryFrom<NativeBlockingSerialPort> for SerialStream {
             .inspect_err(|e| log::warn!("failed to read flow control: {e}"))
             .ok();
 
-        let mut path = Vec::<u16>::new();
-        path.extend(OsStr::new("\\\\.\\").encode_wide());
-        path.extend(Path::new(&name).as_os_str().encode_wide());
-        path.push(0);
+        let path = win32_device_path(&name);
 
         // Drop the port object, we'll reopen the file path as a raw handle
         log::debug!("closing synchronous port to re-open in FILE_FLAG_OVERLAPPED mode");
@@ -633,6 +641,32 @@ impl TryFrom<NativeBlockingSerialPort> for SerialStream {
             inner: com_port,
             pipe,
         })
+    }
+}
+
+#[cfg(all(test, windows))]
+mod tests {
+    use super::win32_device_path;
+
+    fn decode_path(path: Vec<u16>) -> String {
+        String::from_utf16(&path[..path.len() - 1]).unwrap()
+    }
+
+    #[test]
+    fn prefixes_relative_com_port_names() {
+        assert_eq!(decode_path(win32_device_path("COM7")), "\\\\.\\COM7");
+    }
+
+    #[test]
+    fn preserves_absolute_device_interface_names() {
+        let name = "\\\\?\\USB#VID_1546&PID_01A8#device#{guid}";
+        assert_eq!(decode_path(win32_device_path(name)), name);
+    }
+
+    #[test]
+    fn preserves_absolute_dos_device_names() {
+        let name = "\\\\.\\COM7";
+        assert_eq!(decode_path(win32_device_path(name)), name);
     }
 }
 
